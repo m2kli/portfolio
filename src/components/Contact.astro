@@ -1,0 +1,67 @@
+---
+// Contact rows. Email copies the address on click instead of opening a mail app;
+// the address is joined in the browser so it never appears whole in the page source.
+import { site } from '../data/site';
+import { useT, type Lang } from '../i18n/ui';
+
+interface Props {
+  lang: Lang;
+}
+const t = useT(Astro.props.lang);
+---
+
+<div class="contact mono" data-rv>
+  <button
+    type="button"
+    class="email"
+    data-u={site.email.user}
+    data-d={site.email.domain}
+    data-copy={t('contact.copy')}
+    data-copied={t('contact.copied')}
+  >
+    <span class="label">Email</span>
+    <span class="hint">{t('contact.copy')} ⧉</span>
+  </button>
+  {
+    site.links.map((l) => (
+      <a href={l.url} target="_blank" rel="noopener">
+        {l.label} <span>↗</span>
+      </a>
+    ))
+  }
+</div>
+
+<script>
+  function setup() {
+    document.querySelectorAll<HTMLButtonElement>('.contact .email').forEach((btn) => {
+      const addr = `${btn.dataset.u}@${btn.dataset.d}`;
+      const label = btn.querySelector('.label')!;
+      const hint = btn.querySelector('.hint')!;
+      // reveal the address on hover/focus, so visitors can also read it
+      const show = () => (label.textContent = addr);
+      const hide = () => (label.textContent = 'Email');
+      btn.addEventListener('mouseenter', show);
+      btn.addEventListener('focus', show);
+      btn.addEventListener('mouseleave', hide);
+      btn.addEventListener('blur', hide);
+      btn.addEventListener('click', async () => {
+        try {
+          await navigator.clipboard.writeText(addr);
+        } catch {
+          // clipboard blocked (e.g. insecure context): select the text so it can be copied by hand
+          const range = document.createRange();
+          range.selectNodeContents(label);
+          getSelection()?.removeAllRanges();
+          getSelection()?.addRange(range);
+        }
+        hint.textContent = `${btn.dataset.copied} ✓`;
+        btn.classList.add('done');
+        setTimeout(() => {
+          hint.textContent = `${btn.dataset.copy} ⧉`;
+          btn.classList.remove('done');
+        }, 1800);
+      });
+    });
+  }
+  document.addEventListener('astro:page-load', setup);
+</script>

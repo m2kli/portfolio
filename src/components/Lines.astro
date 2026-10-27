@@ -1,0 +1,18 @@
+---
+// Renders headline lines for the line-by-line reveal. `*word*` becomes red italic.
+interface Props {
+  lines: string[];
+}
+const { lines } = Astro.props;
+const parts = (line: string) => line.split(/(\*[^*]+\*)/).filter(Boolean);
+---
+
+{
+  lines.map((line) => (
+    <span class="ln">
+      <span>
+        {parts(line).map((p) => (p.startsWith('*') ? <em>{p.slice(1, -1)}</em> : p))}
+      </span>
+    </span>
+  ))
+}

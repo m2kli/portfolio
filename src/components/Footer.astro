@@ -1,0 +1,14 @@
+---
+import { site } from '../data/site';
+import { useT, type Lang } from '../i18n/ui';
+
+interface Props {
+  lang: Lang;
+}
+const t = useT(Astro.props.lang);
+---
+
+<footer class="site mono">
+  <span>© {site[Astro.props.lang].name}</span>
+  <span>{t('footer.made')}</span>
+</footer>

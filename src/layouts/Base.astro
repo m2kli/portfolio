@@ -1,0 +1,63 @@
+---
+import { ClientRouter } from 'astro:transitions';
+import Masthead from '../components/Masthead.astro';
+import Footer from '../components/Footer.astro';
+import { site } from '../data/site';
+import { altPath, asset, type Lang } from '../i18n/ui';
+import '../styles/global.css';
+
+interface Props {
+  lang: Lang;
+  title?: string;
+  description?: string;
+  image?: string;
+  active?: 'works' | 'about';
+}
+
+const { lang, title, description, image, active } = Astro.props;
+const info = site[lang];
+const pageTitle = title ? `${title} — ${info.name}` : info.title;
+const desc = description ?? info.description;
+const otherLang: Lang = lang === 'zh' ? 'en' : 'zh';
+const canonical = new URL(Astro.url.pathname, Astro.site);
+const alternate = new URL(altPath(lang, Astro.url.pathname), Astro.site);
+const ogImage = image ? new URL(asset(image), Astro.site) : undefined;
+---
+
+<!doctype html>
+<html lang={lang === 'zh' ? 'zh-CN' : 'en'}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{pageTitle}</title>
+    <meta name="description" content={desc} />
+    <link rel="canonical" href={canonical} />
+    <link rel="alternate" hreflang={otherLang === 'zh' ? 'zh-CN' : 'en'} href={alternate} />
+    <meta property="og:title" content={pageTitle} />
+    <meta property="og:description" content={desc} />
+    <meta property="og:type" content="website" />
+    {ogImage && <meta property="og:image" content={ogImage} />}
+    <link rel="icon" href={asset('favicon.svg')} type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,500;1,9..144,300;1,9..144,500&family=Noto+Serif+SC:wght@400;600&family=IBM+Plex+Mono:wght@400&display=swap"
+      rel="stylesheet"
+    />
+    <script is:inline>
+      document.documentElement.classList.add('js');
+      document.addEventListener('astro:after-swap', () => document.documentElement.classList.add('js'));
+    </script>
+    <ClientRouter />
+  </head>
+  <body>
+    <Masthead lang={lang} active={active} />
+    <main>
+      <slot />
+    </main>
+    <Footer lang={lang} />
+    <script>
+      import '../scripts/motion.ts';
+    </script>
+  </body>
+</html>

@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>关卡设计工作台 · 作品集演示</title>
+  <meta name="description" content="通用关卡地图工作台：导入符合工作台规范的地图 JSON，查看、校验、导出。">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%232d7c78'/%3E%3Ctext x='16' y='23' font-family='Georgia,serif' font-size='20' font-weight='600' fill='white' text-anchor='middle'%3EL%3C/text%3E%3C/svg%3E">
+  <link rel="stylesheet" href="workbench.css">
+</head>
+<body>
+  <header class="wb-header">
+    <div class="wb-brand">
+      <span class="wb-mark">L</span>
+      <div><b>关卡工作台</b><span>LEVEL DESIGN WORKBENCH · PORTFOLIO DEMO</span></div>
+    </div>
+    <div class="wb-head-actions">
+      <div class="wb-head-icons" role="group" aria-label="界面">
+        <button id="toggleLeftBtn" type="button" title="收起/展开左栏（[）" aria-label="收起或展开左栏">◧</button>
+        <button id="toggleRightBtn" type="button" title="收起/展开右栏（]）" aria-label="收起或展开右栏">◨</button>
+        <button id="themeBtn" type="button" title="切换暗色/亮色" aria-label="切换暗色或亮色">☾</button>
+        <button id="helpBtn" type="button" title="快捷键（?）" aria-label="快捷键">?</button>
+      </div>
+      <button id="copyLinkBtn" type="button" title="把地图、楼层、图层、画法与 3D 视角写进链接并复制">复制链接</button>
+      <label class="wb-file">导入 JSON<input id="fileInput" type="file" accept="application/json,.json" hidden></label>
+      <a class="wb-link" href="../../works/level-workbench/" target="_top" title="返回作品集 / Back to portfolio">← 作品集</a>
+      <a class="wb-link" href="AI_GUIDE.html" target="_blank" rel="noreferrer" title="给 AI 的工作台与关卡设计指南">AI 指南</a>
+      <a class="wb-link" href="AI_MAP_SPEC.html" target="_blank" rel="noreferrer">AI 输出规范</a>
+      <button id="exportBtn" type="button">导出 SVG</button>
+    </div>
+  </header>
+
+  <main class="wb-main">
+    <aside class="wb-side">
+      <section class="wb-panel">
+        <div class="wb-panel-head"><h2>地图</h2><span id="mapCount"></span></div>
+        <div id="mapList" class="wb-map-list"></div>
+        <p class="wb-hint">作品集演示版：5 张示例地图。也可以导入任何符合规范的地图 JSON，不需要改代码。</p>
+        <div class="wb-compare">
+          <label for="compareSelect">对比基准</label>
+          <select id="compareSelect"><option value="">不对比</option></select>
+          <label class="wb-compare-file" title="导入一份 JSON 只作对比基准，不加入地图列表">导入…<input id="compareFile" type="file" accept="application/json,.json" hidden></label>
+        </div>
+        <div id="diffPanel" class="wb-diff-panel" hidden></div>
+        <details class="wb-paste">
+          <summary>粘贴 AI 输出的 JSON</summary>
+          <textarea id="pasteInput" spellcheck="false" placeholder='把 AI 输出的 JSON 粘到这里，再点“导入”'></textarea>
+          <button id="pasteBtn" type="button">导入这段 JSON</button>
+        </details>
+      </section>
+
+      <section class="wb-panel">
+        <div class="wb-panel-head"><h2>大纲</h2><span id="outlineCount"></span></div>
+        <input id="outlineSearch" class="wb-outline-search" type="search" placeholder="搜索名称 / ID / 类型" autocomplete="off" spellcheck="false" aria-label="搜索地图对象">
+        <div id="outline" class="wb-outline"></div>
+      </section>
+
+      <section class="wb-panel" id="notesSection" hidden>
+        <div class="wb-panel-head"><h2>评审批注</h2><span id="notesCount"></span></div>
+        <div id="notesList" class="wb-notes-list"></div>
+        <div class="wb-notes-actions">
+          <button id="notesExport" type="button" title="导出带 reviewNotes 的地图 JSON（原文件不变）">导出 JSON</button>
+          <button id="notesCopy" type="button" title="复制成可直接发给 AI 的修改意见">复制给 AI</button>
+          <button id="notesClear" type="button">清空</button>
+        </div>
+      </section>
+
+      <section class="wb-panel">
+        <div class="wb-panel-head"><h2>图层</h2></div>
+        <div id="layerList" class="wb-layers"></div>
+        <div id="exitPanel" class="wb-exit-panel" hidden></div>
+      </section>
+
+      <section class="wb-panel">
+        <div class="wb-panel-head"><h2>校验</h2><span id="healthBadge"></span></div>
+        <div id="health" class="wb-health"></div>
+      </section>
+    </aside>
+
+    <section class="wb-stage">
+      <div class="wb-map-head">
+        <div><h1 id="mapTitle">关卡工作台</h1><p id="mapSubtitle"></p></div>
+        <div id="mapBadges" class="wb-badges"></div>
+      </div>
+      <div class="wb-toolbar">
+        <div id="floorBar" class="wb-floors" role="group" aria-label="楼层"></div>
+        <div class="wb-zoom">
+          <div class="wb-mode" role="group" aria-label="视图">
+            <button id="view2dBtn" type="button" class="active" aria-pressed="true">2D</button>
+            <button id="view3dBtn" type="button" aria-pressed="false" title="从同一份地图 JSON 派生的 3D 块面（只读）">3D</button>
+          </div>
+          <div id="style2d" class="wb-mode" role="group" aria-label="2D 画法">
+            <button id="styleSchemaBtn" type="button" class="active" aria-pressed="true" title="示意画法：色块 + 细线">示意</button>
+            <button id="stylePlanBtn" type="button" aria-pressed="false" title="平面图画法：实墙、门洞与开门弧、楼梯踏步">平面图</button>
+          </div>
+          <div id="tools2d" class="wb-tools2d" role="group" aria-label="2D 工具">
+            <button id="measureBtn" type="button" class="wb-toggle" aria-pressed="false" title="测量距离/面积（M）">测量</button>
+            <button id="noteBtn" type="button" class="wb-toggle" aria-pressed="false" title="放批注钉（N）">批注</button>
+            <button id="statsBtn" type="button" title="房间统计（T）">统计</button>
+          </div>
+          <div id="tools3d" class="wb-3d-tools" hidden>
+            <div class="wb-mode" role="group" aria-label="3D 视角">
+              <button id="viewPerspBtn" type="button" class="active" aria-pressed="true" title="透视相机（UE 视口操作）">透视</button>
+              <button id="viewIsoBtn" type="button" aria-pressed="false" title="2.5D 正交俯视（45°）">2.5D</button>
+            </div>
+            <button id="rotLeftBtn" type="button" title="向左转 90°（2.5D 下按 Q）" aria-label="向左转 90°">⟲</button>
+            <button id="rotRightBtn" type="button" title="向右转 90°（2.5D 下按 E）" aria-label="向右转 90°">⟳</button>
+            <button id="cutBtn" type="button" class="wb-toggle active" aria-pressed="true" title="墙体剖切到 1.2 m，深色为剖切面">剖切</button>
+            <button id="shadowBtn" type="button" class="wb-toggle active" aria-pressed="true" title="方向光阴影">阴影</button>
+            <button id="miniBtn" type="button" class="wb-toggle active" aria-pressed="true" title="右上角小地图：显示相机位置与视野，点击/拖动传送">小地图</button>
+          </div>
+          <button id="fitBtn" type="button" title="全图">全图</button>
+          <button id="zoomOut" type="button" aria-label="缩小">−</button>
+          <button id="zoomIn" type="button" aria-label="放大">＋</button>
+          <span id="zoomLabel">100%</span>
+        </div>
+      </div>
+      <div class="wb-canvas" id="canvasWrap">
+        <svg id="map" xmlns="http://www.w3.org/2000/svg" tabindex="0" role="img" aria-label="关卡地图"></svg>
+        <div class="wb-gl" id="gl3d" tabindex="0" role="img" aria-label="关卡 3D 块面" hidden></div>
+        <div class="wb-gl-hint" id="gl3dHint" hidden>按住<b>右键</b>：拖动环视 · <b>WASD</b> 飞行 · <b>Q/E</b> 降/升 · <b>Z/C</b> 视野 · 滚轮调速　|　<b>左键</b>拖动 前进/转向 · <b>中键</b>或左右键同按 平移 · <b>Alt</b>+左/右/中 绕转/推拉/平移 · 滚轮 前后 · 方向键 移动 · <b>F</b> 聚焦</div>
+        <div class="wb-gl-speed" id="gl3dSpeed" hidden></div>
+        <canvas class="wb-gl-mini" id="gl3dMini" hidden aria-label="3D 小地图：点击传送"></canvas>
+        <div class="wb-map-tip" id="mapTip" hidden></div>
+        <div class="wb-measure-readout" id="measureReadout" hidden></div>
+        <div class="wb-note-editor" id="noteEditor" hidden>
+          <textarea id="noteText" rows="3" placeholder="写下评审意见，Enter 保存，Shift+Enter 换行"></textarea>
+          <div><small id="noteTarget"></small><button id="noteSave" type="button">保存</button><button id="noteCancel" type="button">取消</button></div>
+        </div>
+        <div class="wb-empty" id="empty" hidden>没有可显示的内容</div>
+      </div>
+      <div class="wb-stage-foot">
+        <div id="legend" class="wb-legend"></div>
+        <div id="mapMeta" class="wb-map-meta"></div>
+      </div>
+      <section class="wb-pacing" id="pacingPanel">
+        <div class="wb-pacing-head"><h2>压力节奏</h2><span id="pacingSummary"></span><button id="pacingToggle" type="button" aria-expanded="true">收起</button></div>
+        <svg id="pacingChart" viewBox="0 0 1000 150" role="img" aria-label="路线压力曲线"></svg>
+        <p id="pacingNote" class="wb-pacing-note"></p>
+      </section>
+    </section>
+
+    <aside class="wb-inspector">
+      <div id="summary" class="wb-summary"></div>
+      <div class="wb-panel-head"><h2>选中</h2><button id="clearBtn" type="button">清除</button></div>
+      <div id="inspector" class="wb-inspector-body">
+        <p class="wb-hint">点击地图上的房间、物件、敌人、路线或门查看详情。</p>
+      </div>
+      <div class="wb-panel-head"><h2>地图信息</h2></div>
+      <div id="mapInfo" class="wb-map-info"></div>
+      <div class="wb-panel-head"><h2>竖向分层</h2></div>
+      <div id="levelsPanel" class="wb-levels"></div>
+      <div class="wb-panel-head"><h2>设计说明</h2></div>
+      <div id="designNotes" class="wb-notes"></div>
+    </aside>
+  </main>
+
+  <div id="dropHint" class="wb-drop" hidden><div>松开即导入地图 JSON</div></div>
+  <div id="helpPanel" class="wb-modal" hidden role="dialog" aria-modal="true" aria-labelledby="helpTitle">
+    <div class="wb-modal-card">
+      <div class="wb-modal-head"><h2 id="helpTitle">快捷键</h2><button type="button" data-close-modal aria-label="关闭">×</button></div>
+      <div class="wb-help-grid">
+        <section><h3>通用</h3>
+          <p><kbd>?</kbd> 本面板 · <kbd>Esc</kbd> 关闭 / 取消</p>
+          <p><kbd>[</kbd> <kbd>]</kbd> 收起左 / 右栏</p>
+          <p>拖入 <code>.json</code> 文件即导入</p>
+        </section>
+        <section><h3>2D</h3>
+          <p><kbd>M</kbd> 测量（单击加点，双击 / <kbd>Enter</kbd> 结束，点回起点量面积）</p>
+          <p><kbd>N</kbd> 批注（单击放钉并输入意见）</p>
+          <p><kbd>T</kbd> 统计面板</p>
+          <p>拖动平移 · 滚轮缩放 · 方向键平移</p>
+        </section>
+        <section><h3>3D 透视（UE）</h3>
+          <p>按住右键：拖动环视 · <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> 飞行 · <kbd>Q</kbd>/<kbd>E</kbd> 降/升 · <kbd>Z</kbd>/<kbd>C</kbd> 视野 · 滚轮调速</p>
+          <p>左键拖动前进/转向 · 中键平移 · <kbd>Alt</kbd>+左/右/中 绕转/推拉/平移 · <kbd>F</kbd> 聚焦</p>
+        </section>
+        <section><h3>3D 2.5D</h3>
+          <p>左/中键拖动或 <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> 平移 · 滚轮缩放 · <kbd>Q</kbd>/<kbd>E</kbd> 转 90° · 右键拖动自由旋转</p>
+        </section>
+      </div>
+    </div>
+  </div>
+  <div id="statsPanel" class="wb-modal" hidden role="dialog" aria-modal="true" aria-labelledby="statsTitle">
+    <div class="wb-modal-card wb-stats-card">
+      <div class="wb-modal-head"><h2 id="statsTitle">统计</h2><button type="button" data-close-modal aria-label="关闭">×</button></div>
+      <div id="statsBody"></div>
+    </div>
+  </div>
+  <div id="live" class="sr-only" aria-live="polite"></div>
+  <div id="toast" class="wb-toast" role="status"></div>
+
+  <script src="maps.js"></script>
+  <script src="viewer-pacing.js"></script>
+  <script src="map-validate.js"></script>
+  <script src="map-geometry.js"></script>
+  <script src="workbench-3d.js"></script>
+  <script src="workbench.js"></script>
+</body>
+</html>

@@ -1,0 +1,57 @@
+---
+import Base from '../layouts/Base.astro';
+import Lines from '../components/Lines.astro';
+import Contact from '../components/Contact.astro';
+import { site } from '../data/site';
+import { asset, getWorks, href, useT, type Lang } from '../i18n/ui';
+
+interface Props {
+  lang: Lang;
+}
+const { lang } = Astro.props;
+const t = useT(lang);
+const info = site[lang];
+const works = (await getWorks(lang)).filter((w) => w.data.featured);
+const roman = ['i.', 'ii.', 'iii.', 'iv.', 'v.', 'vi.', 'vii.', 'viii.', 'ix.', 'x.'];
+---
+
+<Base lang={lang}>
+  <section class="hero">
+    <div class="issue mono" data-fade><span>{t('hero.issue')}</span><span>{t('hero.label')}</span></div>
+    <h1 class="headline" data-lines><Lines lines={info.headline} /></h1>
+  </section>
+
+  <section class="band" id="works" aria-label={t('works.heading')}>
+    <div class="band-head mono"><span>{t('works.heading')}</span><span>{t('works.scroll')}</span></div>
+    <div class="track">
+      {
+        works.map((w, i) => (
+          <article class="piece">
+            <a class="img" href={href(lang, `works/${w.slug}`)} aria-label={w.data.title}>
+              <img src={asset(w.data.cover)} alt="" loading={i < 2 ? 'eager' : 'lazy'} transition:name={`cover-${w.slug}`} />
+              {w.data.playable && <span class="badge mono">▶ Playable</span>}
+            </a>
+            <div>
+              <span class="no">{roman[i] ?? `${i + 1}.`}</span>
+              <h3>
+                {w.data.title}
+                <i>{w.data.tags.join(' · ')}</i>
+              </h3>
+              <p>{w.data.summary}</p>
+              <a class="more mono link-u" href={href(lang, `works/${w.slug}`)}>
+                {w.data.playable ? t('works.play') : t('works.read')}
+              </a>
+            </div>
+          </article>
+        ))
+      }
+      <div class="end" set:html={t('works.more')} />
+    </div>
+    <div class="band-progress"><i></i></div>
+  </section>
+
+  <section class="colophon" id="contact">
+    <h2 data-rv set:html={t('contact.heading')} />
+    <Contact lang={lang} />
+  </section>
+</Base>

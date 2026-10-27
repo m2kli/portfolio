@@ -1,0 +1,21 @@
+---
+import { site } from '../data/site';
+import { altPath, href, useT, type Lang } from '../i18n/ui';
+
+interface Props {
+  lang: Lang;
+  active?: 'works' | 'about';
+}
+const { lang, active } = Astro.props;
+const t = useT(lang);
+---
+
+<header class="masthead mono">
+  <span class="vol">Vol. 03 — Portfolio</span>
+  <a class="logo" href={href(lang)}>{site[lang].name}</a>
+  <nav aria-label="Main">
+    <a href={href(lang, '#works')} aria-current={active === 'works' ? 'page' : undefined}>{t('nav.works')}</a>
+    <a href={href(lang, 'about')} aria-current={active === 'about' ? 'page' : undefined}>{t('nav.about')}</a>
+    <a class="lang" href={altPath(lang, Astro.url.pathname)} hreflang={lang === 'zh' ? 'en' : 'zh-CN'}>{t('lang.switch')}</a>
+  </nav>
+</header>

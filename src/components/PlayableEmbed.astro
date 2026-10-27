@@ -1,0 +1,55 @@
+---
+// Click-to-play iframe for HTML5/WebGL builds. Nothing loads until the visitor clicks,
+// so heavy Unity/Godot exports don't slow down the page.
+import { asset, useT, type Lang } from '../i18n/ui';
+
+interface Props {
+  lang: Lang;
+  src: string;
+  aspect: string;
+  poster: string;
+  title: string;
+  note?: string;
+}
+const { lang, src, aspect, poster, title, note } = Astro.props;
+const t = useT(lang);
+---
+
+<div class="play-wrap">
+  <div class="play" style={`aspect-ratio:${aspect}`} data-play data-src={asset(src)}>
+    <button class="start" type="button"><span>▶ {t('detail.playStart')}</span></button>
+    <img class="poster" src={asset(poster)} alt="" />
+  </div>
+  <div class="play-bar mono">
+    <p>{note}</p>
+    <button type="button" class="link-u mono" data-fs>{t('detail.fullscreen')} ⤢</button>
+  </div>
+  <template data-title>{title}</template>
+</div>
+
+<script>
+  function setup() {
+    document.querySelectorAll<HTMLElement>('.play-wrap').forEach((wrap) => {
+      const box = wrap.querySelector<HTMLElement>('[data-play]')!;
+      const start = box.querySelector<HTMLButtonElement>('.start')!;
+      const title = wrap.querySelector<HTMLTemplateElement>('[data-title]')!.innerHTML;
+      const load = () => {
+        if (box.classList.contains('loaded')) return;
+        const f = document.createElement('iframe');
+        f.src = box.dataset.src!;
+        f.title = title;
+        f.allow = 'autoplay; fullscreen; gamepad; xr-spatial-tracking';
+        f.allowFullscreen = true;
+        box.appendChild(f);
+        box.classList.add('loaded');
+        f.addEventListener('load', () => f.focus());
+      };
+      start.addEventListener('click', load);
+      wrap.querySelector('[data-fs]')!.addEventListener('click', () => {
+        load();
+        box.requestFullscreen?.();
+      });
+    });
+  }
+  document.addEventListener('astro:page-load', setup);
+</script>

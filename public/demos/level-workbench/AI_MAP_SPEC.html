@@ -1,0 +1,542 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI 关卡输出规范 · 工作台</title>
+<style>
+:root{--ink:#2f403b;--muted:#758277;--line:#ded6c3;--paper:#fbf8ef;--accent:#8b5a45;--code:#f1eadb}
+*{box-sizing:border-box}
+body{margin:0;background:#f6f1e5;color:var(--ink);font:14px/1.7 "Microsoft YaHei","Segoe UI",sans-serif}
+header{position:sticky;top:0;z-index:2;display:flex;align-items:center;gap:12px;padding:12px 24px;background:#fffdf7;border-bottom:1px solid var(--line)}
+header b{font-size:15px} header a{margin-left:auto;color:var(--accent);text-decoration:none;font-size:12px}
+header .download{border:1px solid var(--line);border-radius:6px;padding:5px 9px;color:var(--ink)}
+main{max-width:980px;margin:22px auto 60px;padding:0 22px}
+article{background:#fffdf7;border:1px solid var(--line);border-radius:12px;padding:24px 30px;box-shadow:0 8px 28px #3b2d2010}
+h1{font-size:26px;margin:0 0 6px} h2{font-size:18px;margin:30px 0 8px;border-top:1px solid var(--line);padding-top:18px}
+h3{font-size:14px;margin:20px 0 6px;color:var(--accent)}
+p{color:#43534a} a{color:var(--accent)}
+code{background:var(--code);padding:1px 4px;border-radius:4px;font-family:Consolas,monospace;font-size:12px}
+pre{background:#2f403b;color:#f3eee2;padding:14px 16px;border-radius:8px;overflow:auto;line-height:1.5}
+pre code{background:none;padding:0;color:inherit;font-size:12px}
+table{border-collapse:collapse;width:100%;margin:10px 0;font-size:12px}
+th,td{border:1px solid var(--line);padding:6px 8px;text-align:left;vertical-align:top}
+th{background:#f1eadb} blockquote{margin:12px 0;padding:8px 14px;border-left:3px solid var(--accent);background:#f8f1e5;color:#5f6d61}
+ul,ol{padding-left:22px} li{margin:4px 0}
+@media(max-width:700px){article{padding:16px} main{padding:0 10px}}
+</style>
+</head>
+<body>
+<header><b>AI 关卡输出规范</b><a href="index.html">← 返回工作台</a><a class="download" href="AI_MAP_KIT.md" download>下载给 AI 的单文件包</a></header>
+<main><article><h1>AI 关卡设计输出规范（便携版）</h1>
+<p><strong>用途</strong>：这是通用 HTML 工作台的原生地图格式。把这份文件和示例 JSON 一起交给任何 AI/智能体，让它直接输出工作台能打开、能校验的地图。<br />
+四张现有地图（埃及/中国/罗马/拜占庭）只是工作台里的示例数据，不再各自维护一套页面格式。</p>
+<h2>怎么进工作台</h2>
+<ol>
+<li>让 AI 只输出 JSON，保存为 <code>.json</code>。</li>
+<li>打开 <code>index.html</code>。</li>
+<li>点右上“导入 JSON”；校验通过后自动成为一张地图。</li>
+<li>如果校验报错，把错误交给 AI 修，不要直接改 <code>maps.js</code>。</li>
+</ol>
+<h2>给 AI 的硬规则</h2>
+<ol>
+<li><strong>只输出 JSON</strong>，不要 Markdown 代码块、不要解释、不要前后缀。</li>
+<li>单位统一为<strong>米</strong>；坐标是平面 <code>X/Z</code>：<code>x</code> 越大越靠东（图上向右），<code>z</code> 越大越靠北（图上向上）。工作台 SVG 用 <code>y = -z</code> 画，所以北在上；3D 里标高是第三个轴，来自 <code>floors[].elevation</code>。</li>
+<li>顶层必须有 <code>schemaVersion</code>、<code>meta</code>、<code>floors</code>、<code>rooms</code>、<code>routes</code>。</li>
+<li>所有 ID 必须匹配 <code>^[A-Za-z0-9][A-Za-z0-9_.:-]*$</code>，全文件唯一，新增后不要复用。</li>
+<li>每个房间/物件/敌人/门/路线都必须有存在的 <code>floorId</code>。</li>
+<li>房间是<strong>有序多边形</strong>，至少 3 个点；同层房间不要重叠。</li>
+<li>门是两个点组成的线段，必须落在房间边界上；<code>width</code> 是门洞宽度。</li>
+<li>必须有一条 <code>kind: "main"</code> 的路线；点按行进顺序排列，起终点在房间内。</li>
+<li>敌人 <code>center</code> 必须落在同层某个房间内，并用 <code>roomId</code> 指向它。</li>
+<li>不要写 Unity 字段（Prefab、MonoBehaviour、Transform、NavMesh 等）；这里只表达设计意图。</li>
+</ol>
+<h2>最小输出骨架</h2>
+<pre><code class="language-json">{
+  &quot;schemaVersion&quot;: 1,
+  &quot;meta&quot;: {
+    &quot;title&quot;: &quot;关卡名&quot;,
+    &quot;units&quot;: &quot;m&quot;,
+    &quot;bounds&quot;: { &quot;minX&quot;: 0, &quot;minZ&quot;: 0, &quot;maxX&quot;: 32, &quot;maxZ&quot;: 24 },
+    &quot;provenance&quot;: {
+      &quot;kind&quot;: &quot;design&quot;,
+      &quot;label&quot;: &quot;AI 设计 · v1&quot;,
+      &quot;source&quot;: &quot;AI_MAP_SPEC.md&quot;,
+      &quot;generatedAt&quot;: &quot;2026-10-23&quot;
+    },
+    &quot;player&quot;: {
+      &quot;radius&quot;: 0.35,
+      &quot;height&quot;: 1.7,
+      &quot;walkSpeed&quot;: 4,
+      &quot;rollDistance&quot;: 3,
+      &quot;rollDuration&quot;: 0.3,
+      &quot;interactionRange&quot;: 2
+    }
+  },
+  &quot;floors&quot;: [
+    { &quot;id&quot;: &quot;1F&quot;, &quot;name&quot;: &quot;1F&quot;, &quot;elevation&quot;: 0, &quot;height&quot;: 3.6 }
+  ],
+  &quot;rooms&quot;: [
+    {
+      &quot;id&quot;: &quot;r_entry&quot;,
+      &quot;name&quot;: &quot;入口门厅&quot;,
+      &quot;kind&quot;: &quot;room&quot;,
+      &quot;status&quot;: &quot;planned&quot;,
+      &quot;floorId&quot;: &quot;1F&quot;,
+      &quot;color&quot;: &quot;#e7dcc5&quot;,
+      &quot;points&quot;: [[2, 2], [10, 2], [10, 10], [2, 10]]
+    }
+  ],
+  &quot;objects&quot;: [],
+  &quot;enemies&quot;: [],
+  &quot;doors&quot;: [],
+  &quot;routes&quot;: [
+    {
+      &quot;id&quot;: &quot;main&quot;,
+      &quot;name&quot;: &quot;主线&quot;,
+      &quot;kind&quot;: &quot;main&quot;,
+      &quot;floorId&quot;: &quot;1F&quot;,
+      &quot;points&quot;: [[3, 6], [10, 6], [16, 6], [26, 8]]
+    }
+  ],
+  &quot;reviewNotes&quot;: []
+}
+</code></pre>
+<h2>字段说明</h2>
+<h3><code>meta</code></h3>
+<table>
+<thead>
+<tr>
+<th>字段</th>
+<th>必填</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>title</code></td>
+<td>是</td>
+<td>关卡名</td>
+</tr>
+<tr>
+<td><code>units</code></td>
+<td>是</td>
+<td>固定 <code>"m"</code></td>
+</tr>
+<tr>
+<td><code>bounds</code></td>
+<td>是</td>
+<td><code>{minX,minZ,maxX,maxZ}</code>，所有几何必须落在里面</td>
+</tr>
+<tr>
+<td><code>provenance.kind</code></td>
+<td>是</td>
+<td><code>design</code>（AI 设计）或 <code>scene-snapshot</code>（场景快照）</td>
+</tr>
+<tr>
+<td><code>provenance.label</code></td>
+<td>是</td>
+<td>人类可读来源名</td>
+</tr>
+<tr>
+<td><code>provenance.source</code></td>
+<td>是</td>
+<td>来源文件/工具</td>
+</tr>
+<tr>
+<td><code>provenance.generatedAt</code></td>
+<td>是</td>
+<td><code>design</code> 用生成日期；快照用 <code>snapshotDate</code></td>
+</tr>
+<tr>
+<td><code>player</code></td>
+<td>是</td>
+<td>玩家尺度；用于校验门宽、路线净空</td>
+</tr>
+<tr>
+<td><code>legendLabels</code></td>
+<td>否</td>
+<td>路线图例，如 <code>{ "main": "主线", "optional": "可选" }</code></td>
+</tr>
+</tbody>
+</table>
+<h3><code>floors[]</code></h3>
+<table>
+<thead>
+<tr>
+<th>字段</th>
+<th>必填</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>id</code></td>
+<td>是</td>
+<td>如 <code>B1</code> / <code>1F</code> / <code>2F</code></td>
+</tr>
+<tr>
+<td><code>name</code></td>
+<td>是</td>
+<td>显示名</td>
+</tr>
+<tr>
+<td><code>elevation</code></td>
+<td>是</td>
+<td>相对标高，米；可以负数</td>
+</tr>
+<tr>
+<td><code>height</code></td>
+<td>是</td>
+<td>层高，米</td>
+</tr>
+</tbody>
+</table>
+<h3><code>rooms[]</code></h3>
+<table>
+<thead>
+<tr>
+<th>字段</th>
+<th>必填</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>id</code> / <code>name</code></td>
+<td>是</td>
+<td>唯一 ID / 显示名</td>
+</tr>
+<tr>
+<td><code>kind</code></td>
+<td>是</td>
+<td>推荐 <code>room</code> / <code>corridor</code> / <code>atrium</code> / <code>gallery</code></td>
+</tr>
+<tr>
+<td><code>status</code></td>
+<td>是</td>
+<td><code>existing</code> / <code>planned</code> / <code>adjusted</code> / <code>preview</code> / <code>annotation</code></td>
+</tr>
+<tr>
+<td><code>floorId</code></td>
+<td>是</td>
+<td>所属楼层</td>
+</tr>
+<tr>
+<td><code>points</code></td>
+<td>是</td>
+<td>有序多边形，至少 3 个 <code>[x,z]</code></td>
+</tr>
+<tr>
+<td><code>color</code></td>
+<td>否</td>
+<td><code>#rrggbb</code>，仅显示用</td>
+</tr>
+<tr>
+<td><code>code</code></td>
+<td>否</td>
+<td>图上编号，如 <code>01</code> / <code>III</code></td>
+</tr>
+<tr>
+<td><code>label</code></td>
+<td>否</td>
+<td>房间名放置点 <code>[x,z]</code>；省略则用多边形中心</td>
+</tr>
+<tr>
+<td><code>wallHeight</code></td>
+<td>否</td>
+<td>3D 墙高，米；<code>0</code> = 露天/开放空间（中庭、庭院、广场），这条边不生成墙；省略则约为层高×0.8（上限 2.4）</td>
+</tr>
+</tbody>
+</table>
+<h3><code>objects[]</code></h3>
+<table>
+<thead>
+<tr>
+<th>字段</th>
+<th>必填</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>id</code> / <code>name</code></td>
+<td>是</td>
+<td>唯一 ID / 显示名</td>
+</tr>
+<tr>
+<td><code>kind</code></td>
+<td>是</td>
+<td>推荐 <code>altar</code> / <code>display</code> / <code>cover</code> / <code>bench</code> / <code>column</code> / <code>water</code> / <code>artifact</code> / <code>other</code>；撤离点用 <code>extract</code></td>
+</tr>
+<tr>
+<td><code>floorId</code></td>
+<td>是</td>
+<td>所属楼层</td>
+</tr>
+<tr>
+<td><code>points</code></td>
+<td>是</td>
+<td>占地多边形，至少 3 个 <code>[x,z]</code></td>
+</tr>
+<tr>
+<td><code>solid</code></td>
+<td>否</td>
+<td>是否阻挡通行，默认 <code>false</code></td>
+</tr>
+<tr>
+<td><code>color</code></td>
+<td>否</td>
+<td><code>#rrggbb</code>，仅显示用</td>
+</tr>
+<tr>
+<td><code>height</code></td>
+<td>否</td>
+<td>体块高度，米；默认按类型估算</td>
+</tr>
+</tbody>
+</table>
+<h3><code>enemies[]</code></h3>
+<table>
+<thead>
+<tr>
+<th>字段</th>
+<th>必填</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>id</code> / <code>name</code></td>
+<td>是</td>
+<td>唯一 ID / 显示名</td>
+</tr>
+<tr>
+<td><code>enemyType</code></td>
+<td>是</td>
+<td>稳定类型，如 <code>melee</code> / <code>ranged</code> / <code>elite</code> / <code>boss</code></td>
+</tr>
+<tr>
+<td><code>tier</code></td>
+<td>是</td>
+<td><code>normal</code> / <code>elite</code> / <code>boss</code></td>
+</tr>
+<tr>
+<td><code>branch</code></td>
+<td>是</td>
+<td><code>main</code> 或 <code>optional</code>；<code>optional</code> 不进入主线压力</td>
+</tr>
+<tr>
+<td><code>floorId</code></td>
+<td>是</td>
+<td>所属楼层</td>
+</tr>
+<tr>
+<td><code>roomId</code></td>
+<td>是</td>
+<td>必须存在，且与敌人同层</td>
+</tr>
+<tr>
+<td><code>center</code></td>
+<td>是</td>
+<td><code>[x,z]</code>，必须落在 <code>roomId</code> 的多边形内</td>
+</tr>
+</tbody>
+</table>
+<h3><code>doors[]</code></h3>
+<table>
+<thead>
+<tr>
+<th>字段</th>
+<th>必填</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>id</code> / <code>name</code></td>
+<td>是</td>
+<td>唯一 ID / 显示名</td>
+</tr>
+<tr>
+<td><code>floorId</code></td>
+<td>是</td>
+<td>所属楼层</td>
+</tr>
+<tr>
+<td><code>points</code></td>
+<td>是</td>
+<td>正好 2 个点，线段落在房间边界</td>
+</tr>
+<tr>
+<td><code>width</code></td>
+<td>是</td>
+<td>门洞宽度，米，必须大于 0</td>
+</tr>
+</tbody>
+</table>
+<h3><code>routes[]</code></h3>
+<table>
+<thead>
+<tr>
+<th>字段</th>
+<th>必填</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>id</code> / <code>name</code></td>
+<td>是</td>
+<td>唯一 ID / 显示名</td>
+</tr>
+<tr>
+<td><code>kind</code></td>
+<td>是</td>
+<td>必须有一条 <code>main</code>；可选 <code>optional</code> / <code>exit</code> / <code>secret</code></td>
+</tr>
+<tr>
+<td><code>floorId</code></td>
+<td>是</td>
+<td>所属楼层</td>
+</tr>
+<tr>
+<td><code>points</code></td>
+<td>是</td>
+<td>有序折线，至少 2 个点，按行进顺序。点可写 <code>[x,z]</code>，或 <code>[x,z,y]</code>：<code>y</code> 是该点的绝对标高（米），用于跨层路线（走楼梯上下）；省略 <code>y</code> 则用 <code>floorId</code> 的标高</td>
+</tr>
+<tr>
+<td><code>color</code></td>
+<td>否</td>
+<td><code>#rrggbb</code>，仅显示用</td>
+</tr>
+</tbody>
+</table>
+<h3><code>stairs[]</code>（可选，多层）</h3>
+<table>
+<thead>
+<tr>
+<th>字段</th>
+<th>必填</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>id</code> / <code>name</code></td>
+<td>是</td>
+<td>唯一 ID / 显示名</td>
+</tr>
+<tr>
+<td><code>points</code></td>
+<td>是</td>
+<td>矩形四角 <code>[x,z]</code>，表示楼梯占地</td>
+</tr>
+<tr>
+<td><code>fromFloorId</code> / <code>toFloorId</code></td>
+<td>是</td>
+<td>两端楼层，必须存在</td>
+</tr>
+<tr>
+<td><code>direction</code></td>
+<td>否</td>
+<td><code>up</code> / <code>down</code>，仅显示箭头</td>
+</tr>
+<tr>
+<td><code>bottom</code></td>
+<td>否</td>
+<td>楼梯<strong>低端</strong>在占地矩形的哪一侧：<code>N</code> / <code>S</code> / <code>E</code> / <code>W</code>（N = z 大的一侧，E = x 大的一侧）。3D 据此决定台阶朝向；省略时工作台按相邻房间推测</td>
+</tr>
+</tbody>
+</table>
+<h3><code>water[]</code>（可选）</h3>
+<table>
+<thead>
+<tr>
+<th>字段</th>
+<th>必填</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>id</code> / <code>name</code></td>
+<td>是</td>
+<td>唯一 ID / 显示名</td>
+</tr>
+<tr>
+<td><code>floorId</code></td>
+<td>是</td>
+<td>所属楼层</td>
+</tr>
+<tr>
+<td><code>points</code></td>
+<td>是</td>
+<td>水面多边形，至少 3 个 <code>[x,z]</code></td>
+</tr>
+<tr>
+<td><code>kind</code></td>
+<td>否</td>
+<td><code>pool</code> / <code>fountain</code> / <code>impluvium</code> 等</td>
+</tr>
+</tbody>
+</table>
+<h3><code>reviewNotes[]</code>（可选）</h3>
+<pre><code class="language-json">{ &quot;id&quot;: &quot;note-1&quot;, &quot;text&quot;: &quot;这里需要确认门宽&quot;, &quot;status&quot;: &quot;open&quot;, &quot;targetId&quot;: &quot;r_entry&quot; }
+</code></pre>
+<p><code>status</code>：<code>open</code> / <code>confirmed</code> / <code>resolved</code>；<code>targetId</code> 必须指向真实 ID。</p>
+<p>可选位置：<code>at: [x, z]</code> 表示批注所在的点（没有对应对象时使用，必须在 <code>bounds</code> 内），多层地图再加 <code>floorId</code> 说明在哪一层。工作台“批注”工具导出的评审意见就是这种格式：</p>
+<pre><code class="language-json">{ &quot;id&quot;: &quot;rn-1&quot;, &quot;text&quot;: &quot;这里加一处掩体&quot;, &quot;status&quot;: &quot;open&quot;, &quot;at&quot;: [18, 9], &quot;floorId&quot;: &quot;1F&quot; }
+</code></pre>
+<h3>可选内容字段（工作台会显示）</h3>
+<p>为了让地图不止是轮廓，可加：</p>
+<ul>
+<li><code>meta.pacing</code>：可选 <code>{ lambda, aggro, step, weights }</code>，工作台用它画压力曲线；不填则用默认 5.5/8/1 与普通1、精英3、Boss6；</li>
+<li><code>meta.subtitle</code>、<code>meta.concept</code>、<code>meta.mainLength</code>、<code>meta.area</code>、<code>meta.enemySummary</code>、<code>meta.designNotes[]</code>；</li>
+<li><code>floors[].note</code>（竖向分层说明）；</li>
+<li><code>rooms[].beat</code> / <code>role</code> / <code>preset</code> / <code>flow</code> / <code>area</code> / <code>note</code>（节奏、职责、预设、动线、面积、备注）；<code>short</code> 是图上短名；</li>
+<li><code>objects[].note</code> / <code>assets[]</code>；</li>
+<li><code>enemies[].hp</code> / <code>speed</code> / <code>mechanic</code> / <code>note</code>；</li>
+<li><code>routes[].note</code> / <code>length</code>；</li>
+<li><code>stairs[].note</code> / <code>water[].note</code>。</li>
+</ul>
+<p>3D 相关的可选字段（<code>rooms[].wallHeight</code>、<code>stairs[].bottom</code>、路线点的 <code>y</code>）见上方各表；不填也能显示，只是 3D 靠推测。</p>
+<p>这些字段只影响工作台展示，不影响结构校验。</p>
+<h2>设计约束</h2>
+<ul>
+<li><strong>同层不重叠</strong>：房间多边形不要互相压盖；相邻房间共用边界可以。</li>
+<li><strong>门在墙上</strong>：门线段的中点必须落在某个房间的边上（允许 0.08m 误差）；门宽不小于玩家直径。</li>
+<li><strong>路线有净空</strong>：路线离 <code>solid: true</code> 的物件至少一个玩家半径（<code>meta.player.radius</code>），否则校验告警。</li>
+<li><strong>主路线连通</strong>：主线从入口房间出发，穿过门，经过主要房间，最后到出口/离场房间。</li>
+<li><strong>敌人放在房间里</strong>：不要在墙里、房间外或未定义楼层。</li>
+<li><strong>多楼层</strong>：每层有独立 <code>elevation</code>；<code>2F</code> 在 <code>1F</code> 上方，<code>B1</code> 为负；跨层请加 <code>stairs[]</code>（写上 <code>bottom</code>），跨层路线的点用 <code>[x,z,y]</code> 写出标高。</li>
+<li><strong>不要填历史版本</strong>：这份格式只有当前设计，不包含 v09/v11/v12。</li>
+<li><strong>不要写实现细节</strong>：不要写 Unity 坐标转换、Prefab 路径、碰撞体、NavMesh。</li>
+</ul>
+<h2>输出前自检</h2>
+<ol>
+<li>JSON 能直接解析，没有注释/尾逗号。</li>
+<li>所有 ID 唯一且符合正则。</li>
+<li>每个 <code>floorId</code> / <code>roomId</code> 都能找到。</li>
+<li>房间至少 3 点，面积 &gt; 0。</li>
+<li>敌人都在房间内。</li>
+<li>有一条 <code>main</code> 路线，点按顺序。</li>
+<li>门正好 2 点，宽度 &gt; 0。</li>
+<li>所有坐标在 <code>bounds</code> 内。</li>
+<li>没有 Unity 字段。</li>
+<li>只输出 JSON。</li>
+</ol>
+<h2>文件</h2>
+<ul>
+<li>单文件包（推荐直接给 AI）：<a href="AI_MAP_KIT.md">AI_MAP_KIT.md</a></li>
+<li>机器契约：<a href="AI_MAP_SPEC.schema.json">AI_MAP_SPEC.schema.json</a></li>
+<li>完整示例：<a href="AI_MAP_SAMPLE.json">AI_MAP_SAMPLE.json</a></li>
+<li>校验器：<code>python tools/validate_ai_map.py AI_MAP_SAMPLE.json</code></li>
+</ul>
+<h2>一句话提示词</h2>
+<pre><code class="language-text">你是关卡设计师。请严格按 AI_MAP_SPEC.md 输出一份 JSON 关卡：
+32×24 米，三个房间（入口、中央展厅、离场廊），一条主线，
+一个祭台、两个敌人、两扇门；不要输出 JSON 以外的任何文字。
+</code></pre></article></main>
+</body>
+</html>

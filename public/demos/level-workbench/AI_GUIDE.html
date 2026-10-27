@@ -1,0 +1,444 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI 关卡设计指南 · 工作台</title>
+<style>
+:root{--ink:#2f403b;--muted:#758277;--line:#ded6c3;--paper:#fbf8ef;--accent:#8b5a45;--code:#f1eadb}
+*{box-sizing:border-box}
+body{margin:0;background:#f6f1e5;color:var(--ink);font:14px/1.7 "Microsoft YaHei","Segoe UI",sans-serif}
+header{position:sticky;top:0;z-index:2;display:flex;align-items:center;gap:12px;padding:12px 24px;background:#fffdf7;border-bottom:1px solid var(--line)}
+header b{font-size:15px} header a{margin-left:auto;color:var(--accent);text-decoration:none;font-size:12px}
+header .download{border:1px solid var(--line);border-radius:6px;padding:5px 9px;color:var(--ink)}
+main{max-width:980px;margin:22px auto 60px;padding:0 22px}
+article{background:#fffdf7;border:1px solid var(--line);border-radius:12px;padding:24px 30px;box-shadow:0 8px 28px #3b2d2010}
+h1{font-size:26px;margin:0 0 6px} h2{font-size:18px;margin:30px 0 8px;border-top:1px solid var(--line);padding-top:18px}
+h3{font-size:14px;margin:20px 0 6px;color:var(--accent)}
+p{color:#43534a} a{color:var(--accent)}
+code{background:var(--code);padding:1px 4px;border-radius:4px;font-family:Consolas,monospace;font-size:12px}
+pre{background:#2f403b;color:#f3eee2;padding:14px 16px;border-radius:8px;overflow:auto;line-height:1.5}
+pre code{background:none;padding:0;color:inherit;font-size:12px}
+table{border-collapse:collapse;width:100%;margin:10px 0;font-size:12px}
+th,td{border:1px solid var(--line);padding:6px 8px;text-align:left;vertical-align:top}
+th{background:#f1eadb} blockquote{margin:12px 0;padding:8px 14px;border-left:3px solid var(--accent);background:#f8f1e5;color:#5f6d61}
+ul,ol{padding-left:22px} li{margin:4px 0}
+@media(max-width:700px){article{padding:16px} main{padding:0 10px}}
+</style>
+</head>
+<body>
+<header><b>AI 关卡设计指南</b><a href="index.html">← 返回工作台</a><a class="download" href="AI_MAP_KIT.md" download>下载给 AI 的单文件包</a></header>
+<main><article><h1>关卡工作台 · AI 设计指南</h1>
+<blockquote>
+<p>给任何 AI / 智能体：读完这一页，你就知道工作台怎么读你的地图、怎么判定“合格”，以及怎样设计出一张能直接进工作台、经得起关卡评审的地图。
+字段的逐项定义在后面的《AI 关卡设计输出规范》；本页讲<strong>怎么用、怎么做好</strong>。</p>
+</blockquote>
+<h2>0. 你的任务（产出合同）</h2>
+<ul>
+<li><strong>只输出一份 JSON</strong>：不要解释、不要 Markdown 代码块、不要前后缀、不要注释或尾逗号。</li>
+<li>格式是 <code>AI_MAP_SPEC</code> v1（<code>"schemaVersion": 1</code>）。</li>
+<li><strong>合格</strong> = 同时满足：
+  1. 结构校验 <strong>0 错误</strong>（错误会让工作台直接拒绝导入）；
+  2. <strong>0 告警</strong>（告警能导入，但说明设计有问题：门太窄、路线擦墙、门没在墙上……）；
+  3. 通过本页第 8 节的<strong>设计质量清单</strong>（校验器查不出来的东西，比如节奏、职责、引导）。</li>
+<li>你写的 JSON 是唯一真相：工作台不会替你补数据、不会自动修坐标；你没写的东西就不存在。</li>
+</ul>
+<h2>1. 工作台怎么运作</h2>
+<p>工作台是一个<strong>只读</strong>的静态网页：读入地图 JSON → 校验 → 画成 2D 平面图、3D 块面和压力曲线。它不写回任何文件，也不连接游戏引擎。</p>
+<pre><code class="language-text">你的 JSON ──► 校验（页面与 tools/validate_ai_map.py 同一套规则）
+                │ 有错误 → 拒绝导入，提示第一条
+                ▼
+           2D 平面（SVG）   3D 块面（three.js）   压力节奏曲线   详情面板
+</code></pre>
+<p>你写的每类数据在哪里被看到：</p>
+<table>
+<thead>
+<tr>
+<th>数据</th>
+<th>2D 平面</th>
+<th>3D 块面</th>
+<th>其他</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>floors[]</code></td>
+<td>楼层页签、竖向分层面板</td>
+<td>每层楼板的标高</td>
+<td>单看某层时其他层淡显</td>
+</tr>
+<tr>
+<td><code>rooms[]</code></td>
+<td>彩色多边形 + 名称（<code>code</code> + <code>short</code>）</td>
+<td>楼板 + 沿房间边自动生成的墙</td>
+<td>压力曲线背景色带、详情</td>
+</tr>
+<tr>
+<td><code>doors[]</code></td>
+<td>墙上的虚线（比玩家直径窄会变红）</td>
+<td>墙上<strong>自动开洞</strong></td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>routes[]</code></td>
+<td>带箭头的折线；“通行宽度”图层画玩家宽度</td>
+<td>地面路带，<code>[x,z,y]</code> 点会爬坡</td>
+<td><strong>主线决定压力曲线</strong></td>
+</tr>
+<tr>
+<td><code>enemies[]</code></td>
+<td>圆点（普通）/ 菱形（精英）/ 大圆（Boss）</td>
+<td>球 / 八面体 / 大球</td>
+<td><code>branch:"main"</code> 才计入压力</td>
+</tr>
+<tr>
+<td><code>objects[]</code></td>
+<td>多边形（<code>solid</code> 阻挡）</td>
+<td>按 <code>height</code> 拉伸的体块</td>
+<td>阻挡物参与“路线净空”校验</td>
+</tr>
+<tr>
+<td><code>stairs[]</code></td>
+<td>带 ↕/↔ 的矩形</td>
+<td>两层之间的台阶</td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>water[]</code></td>
+<td>水纹多边形</td>
+<td>半透明水面</td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>reviewNotes[]</code></td>
+<td>编号备注钉（<code>targetId</code> 钉在对象上，<code>at</code> 钉在坐标点）</td>
+<td>—</td>
+<td>待确认事项 / 评审意见</td>
+</tr>
+<tr>
+<td><code>meta.designNotes[]</code></td>
+<td>右侧“设计说明”</td>
+<td>—</td>
+<td>写你的设计意图</td>
+</tr>
+<tr>
+<td>房间的 <code>beat/role/flow/preset/note</code></td>
+<td>点击房间后在详情里显示</td>
+<td>—</td>
+<td>评审会读这些</td>
+</tr>
+</tbody>
+</table>
+<h2>2. 坐标、单位与尺度</h2>
+<ul>
+<li><strong>单位：米。</strong> 平面坐标 <code>[x, z]</code>：<strong><code>x</code> 越大越靠东（图上向右），<code>z</code> 越大越靠北（图上向上）</strong>。</li>
+<li>标高不写在点里，而是来自 <code>floors[].elevation</code>；只有<strong>路线</strong>的点可以写第三个值 <code>[x, z, y]</code>（绝对标高）。</li>
+<li><code>meta.bounds</code> 是整张图的外框，<strong>所有点都必须在框内</strong>（含边上）。建议外框比房间整体大 1–2 m。</li>
+<li><strong>用整数或 0.5 m 网格</strong>画房间与门，相邻房间才好严丝合缝；不要写 13.333 这类数。</li>
+<li>玩家尺度在 <code>meta.player</code>（一般 <code>radius 0.35</code>、<code>height 1.7</code>）。下表是<strong>推荐</strong>尺寸，用玩家直径 <code>D = 2×radius</code> 换算：</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th>元素</th>
+<th>硬下限（校验器）</th>
+<th>推荐</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>门宽 <code>width</code></td>
+<td>≥ D（否则告警）</td>
+<td>普通 1.6–2 m，主线/带怪通过 2–4 m</td>
+</tr>
+<tr>
+<td>走廊宽</td>
+<td>—</td>
+<td>≥ 3 m；主战斗走廊 4–6 m</td>
+</tr>
+<tr>
+<td>路线离阻挡物件</td>
+<td>≥ radius（否则告警）</td>
+<td>≥ 1 m，主线 ≥ 1.5 m</td>
+</tr>
+<tr>
+<td>敌人离墙</td>
+<td>在房间内即可</td>
+<td>≥ 1 m</td>
+</tr>
+<tr>
+<td>战斗房间</td>
+<td>—</td>
+<td>短边 ≥ 8 m；Boss 房 ≥ 12×12 m</td>
+</tr>
+<tr>
+<td>层高 <code>height</code></td>
+<td>&gt; 0</td>
+<td>3–4.5 m</td>
+</tr>
+</tbody>
+</table>
+<h2>3. 设计流程（按这个顺序写）</h2>
+<ol>
+<li><strong>先定意图</strong>：一句话概念、目标时长/主线长度、几场战斗、一个高潮。写进 <code>meta.subtitle</code> 和 <code>meta.designNotes</code>。</li>
+<li><strong>楼层</strong>：<code>floors[]</code> 按 <code>elevation</code> <strong>从低到高</strong>排列。单层图只写一个 <code>1F</code>。</li>
+<li><strong>房间网格</strong>：先在纸面上用矩形排布。<strong>相邻房间共用边界时，两边的坐标必须完全相同</strong>（这样门能落在边上，3D 墙会合并成一段）。同层房间<strong>不要重叠</strong>（外框重叠也会告警，L 形房间请拆成两个矩形房间）。</li>
+<li><strong>门</strong>：每扇门是一条<strong>落在房间边上</strong>的线段，两个点都在那条边上；<code>width</code> 等于线段长度。房间之间要连通，就一定要有门。</li>
+<li><strong>主线</strong>（<code>kind:"main"</code>，只要一条）：从入口房间里出发，<strong>每次换房间都穿过门的中点附近</strong>，最后停在终点房间里。折线点按行进顺序。避开 <code>solid</code> 物件至少 1 m。</li>
+<li><strong>敌人</strong>：每个敌人的 <code>center</code> 在它的 <code>roomId</code> 多边形内（同层），离墙 ≥ 1 m；主线上的写 <code>branch:"main"</code>，支线上的写 <code>"optional"</code>。</li>
+<li><strong>物件</strong>：掩体、展台、柱子等。会挡路的写 <code>solid:true</code>，并给 <code>height</code>（米）；不会挡路的写 <code>solid:false</code>。</li>
+<li><strong>可选路线</strong>（<code>optional</code> / <code>secret</code> / <code>exit</code>）：从主线分叉，给回报（资源、精英、捷径）。</li>
+<li><strong>多层时</strong>：加 <code>stairs[]</code>（写 <code>bottom</code>），跨层路线的点写成 <code>[x, z, y]</code>。</li>
+<li><strong>自检</strong>：按第 7、8 节逐条过；能跑命令时运行校验器。</li>
+</ol>
+<h2>4. 节奏：工作台怎么算压力</h2>
+<p>工作台沿<strong>主线</strong>（若有 <code>exit</code> 路线则接在主线后面）每 1 m 取一个采样点，计算：</p>
+<pre><code class="language-text">压力(采样点) = Σ  权重(敌人) × exp(−距离 / 5.5 m)      只算 branch:&quot;main&quot; 的敌人
+权重：meta.pacing.weights[enemyType]，缺省按 tier：normal 1 / elite 3 / boss 6
+休息段：压力 &lt; 峰值 × 20% 且连续 ≥ 4 m
+</code></pre>
+<p>注意：距离只看平面（不分楼层）；<code>optional</code> 敌人不计入。所以<strong>敌人放在哪、离主线多远，直接决定曲线形状</strong>。</p>
+<p>好的曲线是<strong>锯齿上升</strong>：</p>
+<ul>
+<li>开局低压（教学/观察），第一个小峰用 1–3 个普通敌人；</li>
+<li>每个峰之后留一段<strong>休息</strong>（≥ 4 m 低压，最好是一个安静房间或景观点）；</li>
+<li>峰值逐渐升高，<strong>最高峰在后段</strong>（Boss / 精英房），高潮前一定有一段休息；</li>
+<li>不要从头到尾一条高平线，也不要把所有敌人堆在一个门口。</li>
+</ul>
+<p>可用 <code>meta.pacing</code> 微调：<code>{ "lambda": 5.5, "aggro": 8, "step": 1, "weights": { "melee": 1, "elite": 3, "boss": 6 } }</code>（<code>weights</code> 的键是 <code>enemyType</code>）。</p>
+<h2>5. 多层地图</h2>
+<ul>
+<li>每层一个 <code>floors[]</code> 项，<code>elevation</code> 可为负（地下）；同一层的房间不重叠，不同层可以上下重叠。</li>
+<li>楼梯：<code>stairs[]</code> 的 <code>points</code> 是矩形占地；<code>fromFloorId</code>/<code>toFloorId</code> 是两端楼层；<strong><code>bottom</code> 写低端在哪一侧</strong>（<code>N/S/E/W</code>，N = z 大的一侧，E = x 大的一侧）。不写时 3D 只能推测朝向。</li>
+<li>楼梯占地要落在两端楼层都有房间的位置（起点层的房间里，并对着目标层的房间）。</li>
+<li>跨层路线：路线的 <code>floorId</code> 写出发层，经过楼梯的点写成 <code>[x, z, y]</code>：楼梯低端点用低层标高，高端点用高层标高，之后在新楼层上的点都带 <code>y</code>。</li>
+<li>敌人、门、物件都按所在楼层写 <code>floorId</code>，敌人必须在同层房间里。</li>
+</ul>
+<h2>6. 3D 怎么显示（写对字段，3D 才像样）</h2>
+<ul>
+<li><strong>墙</strong>：沿每个房间的边自动生成，高约 0.8×层高（上限 2.4 m）。<strong>露天庭院、广场、中庭写 <code>"wallHeight": 0</code></strong>，就不会被围墙；需要矮墙/高墙时写具体米数。</li>
+<li><strong>门</strong>：落在墙上的门会自动开洞——门不在边上，墙上就没有洞。</li>
+<li><strong>物件高度</strong>：写 <code>height</code> 最准；不写时按 <code>kind</code> 估算（如 <code>column</code>/<code>pier</code> 3 m、<code>altar</code> 1.1 m、<code>case</code>/<code>display</code> 1 m、<code>bench</code> 0.45 m、<code>sign</code> 1.8 m，其他 0.8 m），且不超过层高。</li>
+<li><strong>特殊物件 <code>kind</code></strong>：<code>floor-finish</code>/<code>floor-inlay</code> = 贴地铺装（不挡路）；<code>combat-space</code> = 战斗留白虚线框；<code>loot</code> = 资源点；<code>interaction</code> = 交互点；<strong><code>extract</code> = 撤离点</strong>（搜打撤地图请用它标每个出口，工作台的“撤离距离”图层据此计算到最近出口的步行距离；也可用 <code>kind: "exit"</code> 的路线终点）。</li>
+<li>颜色 <code>color</code> 用 <code>#rrggbb</code>；不写就用默认色。</li>
+</ul>
+<h2>7. 校验规则（code → 意思 → 怎么改）</h2>
+<p><strong>错误（error，导入会被拒绝）</strong></p>
+<table>
+<thead>
+<tr>
+<th>code</th>
+<th>意思</th>
+<th>怎么改</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>schema-version</code></td>
+<td><code>schemaVersion</code> 不是 1</td>
+<td>写 <code>"schemaVersion": 1</code></td>
+</tr>
+<tr>
+<td><code>meta-units</code></td>
+<td><code>meta.units</code> 不是 <code>"m"</code></td>
+<td>写 <code>"units": "m"</code></td>
+</tr>
+<tr>
+<td><code>meta-bounds</code> / <code>meta-bounds-order</code></td>
+<td>外框缺失、非数字或 min ≥ max</td>
+<td>补齐四个数字，min &lt; max</td>
+</tr>
+<tr>
+<td><code>provenance-kind</code> / <code>provenance-fields</code> / <code>provenance-date</code></td>
+<td>来源信息不全</td>
+<td><code>kind:"design"</code> + <code>label</code> + <code>source</code> + <code>generatedAt</code>（日期字符串）</td>
+</tr>
+<tr>
+<td><code>player-field</code></td>
+<td><code>meta.player</code> 缺字段或为负</td>
+<td>六个字段都写非负数</td>
+</tr>
+<tr>
+<td><code>legend-label</code></td>
+<td>图例文字为空</td>
+<td>删掉或填文字</td>
+</tr>
+<tr>
+<td><code>floor-id</code> / <code>floor-dup</code> / <code>floor-elevation</code> / <code>floor-height</code></td>
+<td>楼层 id 非法/重复、标高非数字、层高 ≤ 0</td>
+<td>修正对应楼层</td>
+</tr>
+<tr>
+<td><code>floor-unknown</code></td>
+<td>实体的 <code>floorId</code> 不存在</td>
+<td>改成 <code>floors[]</code> 里有的 id</td>
+</tr>
+<tr>
+<td><code>id-invalid</code> / <code>id-dup</code></td>
+<td>ID 不合规（<code>^[A-Za-z0-9][A-Za-z0-9_.:-]*$</code>）或全文件重复</td>
+<td>换成唯一的英文 ID（楼层 id 也算在内）</td>
+</tr>
+<tr>
+<td><code>rooms-empty</code></td>
+<td>没有房间</td>
+<td>至少一个房间</td>
+</tr>
+<tr>
+<td><code>room-status</code></td>
+<td>房间 <code>status</code> 非法</td>
+<td>用 <code>planned</code>（设计）等合法值</td>
+</tr>
+<tr>
+<td><code>room-points</code> / <code>object-points</code> / <code>stairs-points</code> / <code>water-points</code></td>
+<td>多边形少于 3 个点</td>
+<td>至少 3 个点（矩形写 4 个角）</td>
+</tr>
+<tr>
+<td><code>room-wall-height</code></td>
+<td><code>wallHeight</code> 不是 ≥ 0 的数</td>
+<td>改成数字或删掉</td>
+</tr>
+<tr>
+<td><code>point-invalid</code></td>
+<td>点不是 <code>[x,z]</code>（路线可 <code>[x,z,y]</code>）</td>
+<td>改成数字数组</td>
+</tr>
+<tr>
+<td><code>point-out-of-bounds</code></td>
+<td>点超出 <code>meta.bounds</code></td>
+<td>挪点或放大外框</td>
+</tr>
+<tr>
+<td><code>enemy-tier</code> / <code>enemy-branch</code></td>
+<td>等级/分支非法</td>
+<td><code>tier</code>: normal/elite/boss；<code>branch</code>: main/optional</td>
+</tr>
+<tr>
+<td><code>enemy-room-unknown</code> / <code>enemy-floor-mismatch</code></td>
+<td>房间不存在/与房间不同层</td>
+<td>改 <code>roomId</code> 或 <code>floorId</code></td>
+</tr>
+<tr>
+<td><code>enemy-center-invalid</code> / <code>enemy-outside-room</code></td>
+<td>中心格式错/不在房间多边形内</td>
+<td>把 <code>center</code> 挪进房间（离墙 ≥ 1 m）</td>
+</tr>
+<tr>
+<td><code>door-points</code> / <code>door-width</code></td>
+<td>门不是 2 个点 / 宽 ≤ 0</td>
+<td>两点线段，<code>width</code> = 线段长</td>
+</tr>
+<tr>
+<td><code>route-kind</code> / <code>route-points</code></td>
+<td>路线类型非法 / 少于 2 点</td>
+<td><code>main/optional/exit/secret</code>，≥ 2 点</td>
+</tr>
+<tr>
+<td><code>main-missing</code></td>
+<td>没有主线</td>
+<td>加一条 <code>kind:"main"</code></td>
+</tr>
+<tr>
+<td><code>stairs-floor-unknown</code> / <code>stairs-bottom</code></td>
+<td>楼梯楼层不存在 / <code>bottom</code> 非 N/S/E/W</td>
+<td>修正</td>
+</tr>
+<tr>
+<td><code>note-status</code> / <code>note-target</code></td>
+<td>备注状态非法 / 指向不存在的 ID</td>
+<td><code>open/confirmed/resolved</code>，<code>targetId</code> 指向真实 ID</td>
+</tr>
+</tbody>
+</table>
+<p><strong>告警（warn，能导入，但不合格）</strong></p>
+<table>
+<thead>
+<tr>
+<th>code</th>
+<th>意思</th>
+<th>怎么改</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>floors-order</code></td>
+<td>楼层没按标高从低到高</td>
+<td>调整 <code>floors[]</code> 顺序</td>
+</tr>
+<tr>
+<td><code>room-small</code></td>
+<td>房间面积 &lt; 0.5 m²</td>
+<td>多半是点写错；删掉或放大</td>
+</tr>
+<tr>
+<td><code>room-overlap</code></td>
+<td>同层两个房间外框重叠 &gt; 0.5 m²</td>
+<td>拆成不重叠的矩形；相邻只共用边</td>
+</tr>
+<tr>
+<td><code>door-narrow</code></td>
+<td>门宽小于玩家直径</td>
+<td>加宽到 ≥ 推荐值</td>
+</tr>
+<tr>
+<td><code>door-off-boundary</code></td>
+<td>门中点不在任何房间边上（容差 0.08 m）</td>
+<td>把门的两点放到两房间的共用边上</td>
+</tr>
+<tr>
+<td><code>main-multiple</code></td>
+<td>不止一条主线</td>
+<td>只留一条 <code>main</code>，其余改 <code>optional</code></td>
+</tr>
+<tr>
+<td><code>route-clearance</code></td>
+<td>路线离某个 <code>solid</code> 物件不足玩家半径</td>
+<td>折线绕开物件（推荐 ≥ 1 m），或挪物件</td>
+</tr>
+</tbody>
+</table>
+<h2>8. 设计质量清单（校验器查不出，但评审会看）</h2>
+<ul>
+<li>[ ] <strong>主线完整</strong>：从入口到终点连续，每次换房间都穿过门；不穿墙、不穿实心物件。</li>
+<li>[ ] <strong>每个房间有职责</strong>：写 <code>beat</code>（这里发生什么）或 <code>role</code>；没有“只是为了凑面积”的空房。</li>
+<li>[ ] <strong>先教后考</strong>：第一场战斗简单、空间宽；新敌人类型先单独出现，再混编。</li>
+<li>[ ] <strong>锯齿节奏</strong>：压力有起伏，峰后有休息，最高峰在后段，Boss 前有喘息。</li>
+<li>[ ] <strong>可选内容有回报</strong>：每条 <code>optional</code>/<code>secret</code> 路线终点有资源、精英或捷径，并在 <code>note</code> 里写明。</li>
+<li>[ ] <strong>没有意外的死胡同</strong>：每个房间至少一扇门；单入口房间要有存在理由（宝箱、密室）。</li>
+<li>[ ] <strong>能撤离</strong>（有出口的地图）：撤离点用 <code>kind: "extract"</code> 标出；工作台“撤离距离”图层里不应有灰色（到不了出口）的可走区域，跨层靠 <code>stairs[]</code> 连通。</li>
+<li>[ ] <strong>敌人位置合理</strong>：不贴墙、不堵门口正中、不在楼梯上；精英/Boss 房有活动空间（≥ 8 m 短边）。</li>
+<li>[ ] <strong>引导</strong>：主线方向上有地标（大物件、亮色房间、开阔视野），不靠墙硬挡。</li>
+<li>[ ] <strong>意图写清楚</strong>：<code>meta.designNotes</code> 2–5 条，说明结构、节奏、关键取舍；需要人确认的事写进 <code>reviewNotes</code>。</li>
+<li>[ ] <strong>数字干净</strong>：坐标用整数或 .5；门宽与线段长一致；ID 语义化（<code>r_entry</code>、<code>d_court</code>、<code>e_boss</code>）。</li>
+</ul>
+<h2>9. AI 最常犯的错</h2>
+<ol>
+<li><strong>方向反了</strong>：把 <code>z</code> 当成向下（南）。记住：<code>z</code> 越大越北，图上越靠上。</li>
+<li><strong>门画在房间中间</strong>或只碰到一个房间：门必须在两个房间共用的那条边上。</li>
+<li><strong>房间互相压盖</strong>：为了做 L 形把两个矩形叠在一起 → 改成共边相接。</li>
+<li><strong>敌人在墙上/房间外</strong>：<code>center</code> 恰好落在边上时判定不稳定（可能被判为房间外），一律往里挪 ≥ 1 m。</li>
+<li><strong>路线穿过家具</strong>：主线画直线穿过祭台、展柜 → 加折点绕开。</li>
+<li><strong>ID 重复</strong>：楼层 <code>1F</code> 和房间 <code>1F</code> 也算重复。</li>
+<li><strong>输出带了 Markdown 代码块或说明文字</strong>：工作台会解析失败。</li>
+<li><strong>坐标超出 bounds</strong>：最后加的物件/路线点常常越界。</li>
+<li><strong>多层地图忘了楼梯或标高</strong>：跨层却没有 <code>stairs[]</code>，路线点也没写 <code>y</code>。</li>
+</ol>
+<h2>10. 交付与迭代</h2>
+<ol>
+<li>输出 JSON，保存为 <code>my-map.json</code>。</li>
+<li>校验（能运行命令时）：<code>python tools/validate_ai_map.py my-map.json</code>；每条问题都带 <code>[code]</code>，按第 7 节修。</li>
+<li>在工作台导入：右上“导入 JSON”，或左侧“粘贴 AI 输出的 JSON”。左侧“校验”面板列出全部问题，点一条即定位；打开“问题标记”“通行宽度”图层看哪里出问题；切 3D 看墙、门洞、楼梯朝向是否合理。</li>
+<li>有问题时，把校验输出原样交回 AI，<strong>只改出问题的部分</strong>，ID 保持不变。</li>
+<li>评审意见：工作台的“批注”工具会导出带 <code>reviewNotes</code> 的地图 JSON（<code>targetId</code> 指对象，<code>at: [x, z]</code> 指位置）。收到这样的文件时，逐条处理 <code>status: "open"</code> 的批注，改完把该条 <code>status</code> 设为 <code>"resolved"</code>，其余内容与 ID 不变。</li>
+</ol>
+<h3>提示词模板</h3>
+<pre><code class="language-text">你是关卡设计师。请先完整阅读 AI_MAP_KIT.md，然后严格按其中的规范输出一份 JSON 关卡，不要输出 JSON 以外的任何文字。
+需求：&lt;规模，如 40×30 米、两层&gt;；&lt;主题&gt;；&lt;房间数&gt;；&lt;战斗数与高潮&gt;；&lt;可选内容&gt;。
+要求：结构校验 0 错误 0 告警；满足“设计质量清单”；在 meta.designNotes 写 3 条设计意图。
+</code></pre>
+<p>修改轮：</p>
+<pre><code class="language-text">下面是校验器对你上一版地图的输出。请只修复这些问题，保持其他内容和所有 ID 不变，重新输出完整 JSON：
+&lt;粘贴 validate_ai_map.py 的输出&gt;
+</code></pre></article></main>
+</body>
+</html>

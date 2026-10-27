@@ -1,0 +1,91 @@
+---
+import { asset } from '../i18n/ui';
+
+interface Props {
+  items: { src: string; caption?: string; wide?: boolean }[];
+}
+const { items } = Astro.props;
+const pad = (n: number) => String(n).padStart(2, '0');
+---
+
+<!-- Each gallery carries its own lightbox, so a page can have several. -->
+<div data-gallery-root>
+  <div class="gallery">
+    {
+      items.map((it, i) => (
+        <figure data-rv class:list={{ wide: it.wide }}>
+          <button type="button" data-index={i} aria-label={it.caption ?? `Image ${i + 1}`}>
+            <img src={asset(it.src)} alt={it.caption ?? ''} loading="lazy" />
+          </button>
+          <figcaption>
+            <span class="mono">Fig. {pad(i + 1)}</span>
+            <span>{it.caption}</span>
+          </figcaption>
+        </figure>
+      ))
+    }
+  </div>
+
+  <div class="lightbox" role="dialog" aria-modal="true" aria-label="Gallery" data-lightbox>
+    <button class="close mono" type="button" data-close>Close ✕</button>
+    <button class="nav prev mono" type="button" data-prev aria-label="Previous">←</button>
+    <figure>
+      <img alt="" />
+      <figcaption class="cap mono"><span data-cap></span><span data-count></span></figcaption>
+    </figure>
+    <button class="nav next mono" type="button" data-next aria-label="Next">→</button>
+  </div>
+</div>
+
+<script>
+  import { gsap } from 'gsap';
+
+  function setupOne(root: HTMLElement) {
+    const box = root.querySelector<HTMLElement>('[data-lightbox]')!;
+    const buttons = [...root.querySelectorAll<HTMLButtonElement>('.gallery button[data-index]')];
+    const img = box.querySelector('img')!;
+    const cap = box.querySelector('[data-cap]')!;
+    const count = box.querySelector('[data-count]')!;
+    let cur = 0;
+    let opener: HTMLElement | null = null;
+
+    const show = (i: number) => {
+      cur = (i + buttons.length) % buttons.length;
+      const src = buttons[cur].querySelector('img')!;
+      img.src = src.src;
+      img.alt = src.alt;
+      cap.textContent = src.alt;
+      count.textContent = `${cur + 1} / ${buttons.length}`;
+      gsap.fromTo(img, { opacity: 0, scale: 0.98 }, { opacity: 1, scale: 1, duration: 0.5, ease: 'expo.out' });
+    };
+    const open = (i: number) => {
+      opener = document.activeElement as HTMLElement;
+      box.classList.add('open');
+      gsap.fromTo(box, { opacity: 0 }, { opacity: 1, duration: 0.3 });
+      show(i);
+      box.querySelector<HTMLButtonElement>('[data-close]')!.focus();
+    };
+    const close = () => {
+      gsap.to(box, { opacity: 0, duration: 0.25, onComplete: () => box.classList.remove('open') });
+      opener?.focus();
+    };
+
+    buttons.forEach((b, i) => b.addEventListener('click', () => open(i)));
+    box.querySelector('[data-close]')!.addEventListener('click', close);
+    box.querySelector('[data-prev]')!.addEventListener('click', () => show(cur - 1));
+    box.querySelector('[data-next]')!.addEventListener('click', () => show(cur + 1));
+    box.addEventListener('click', (e) => e.target === box && close());
+    const onKey = (e: KeyboardEvent) => {
+      if (!box.classList.contains('open')) return;
+      if (e.key === 'Escape') close();
+      if (e.key === 'ArrowLeft') show(cur - 1);
+      if (e.key === 'ArrowRight') show(cur + 1);
+    };
+    document.addEventListener('keydown', onKey);
+    document.addEventListener('astro:before-swap', () => document.removeEventListener('keydown', onKey), { once: true });
+  }
+
+  document.addEventListener('astro:page-load', () => {
+    document.querySelectorAll<HTMLElement>('[data-gallery-root]').forEach(setupOne);
+  });
+</script>

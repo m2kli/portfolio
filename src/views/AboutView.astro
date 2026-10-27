@@ -1,0 +1,26 @@
+---
+import Base from '../layouts/Base.astro';
+import Lines from '../components/Lines.astro';
+import Contact from '../components/Contact.astro';
+import { site } from '../data/site';
+import { useT, type Lang } from '../i18n/ui';
+
+interface Props {
+  lang: Lang;
+}
+const { lang } = Astro.props;
+const t = useT(lang);
+const info = site[lang];
+---
+
+<Base lang={lang} title={t('about.heading')} active="about">
+  <section class="hero">
+    <div class="issue mono" data-fade><span>№ 02 / {t('about.heading')}</span><span>{t('hero.label')}</span></div>
+    <h1 class="headline" data-lines><Lines lines={info.aboutHeadline} /></h1>
+  </section>
+
+  <section class="colophon">
+    <h2 data-rv set:html={t('contact.heading')} />
+    <Contact lang={lang} />
+  </section>
+</Base>

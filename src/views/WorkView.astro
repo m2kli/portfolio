@@ -1,0 +1,125 @@
+---
+import { render } from 'astro:content';
+import Base from '../layouts/Base.astro';
+import Gallery from '../components/Gallery.astro';
+import LinkButtons from '../components/LinkButtons.astro';
+import PlayableEmbed from '../components/PlayableEmbed.astro';
+import VideoEmbed from '../components/VideoEmbed.astro';
+import { asset, href, useT, type Lang, type Work } from '../i18n/ui';
+
+interface Props {
+  lang: Lang;
+  work: Work;
+  index: number;
+  next: Work;
+}
+const { lang, work, index, next } = Astro.props;
+const t = useT(lang);
+const d = work.data;
+const { Content } = await render(work);
+// the design-notes section is left out entirely when a work has no notes text and no notes images
+const hasNotesText = Boolean(work.body?.trim());
+const roman = ['i.', 'ii.', 'iii.', 'iv.', 'v.', 'vi.', 'vii.', 'viii.', 'ix.', 'x.'];
+const meta = [
+  [t('detail.year'), d.year ? String(d.year) : undefined],
+  [t('detail.role'), d.role],
+  [t('detail.team'), d.team],
+  [t('detail.duration'), d.duration],
+  [t('detail.engine'), d.engine],
+  [t('detail.platforms'), d.platforms.join(' · ')],
+].filter(([, v]) => v);
+---
+
+<Base lang={lang} title={d.title} description={d.summary} image={d.cover} active="works">
+  <section class="d-head">
+    <a class="back mono link-u" href={href(lang, '#works')}>{t('detail.back')}</a>
+    <div class="d-title">
+      <span class="no" data-fade>{roman[index] ?? `${index + 1}.`}</span>
+      <h1 data-lines>
+        <span class="ln"><span>{d.title}</span></span>
+        <span class="ln"><span><i>{d.tags.join(' · ')}</i></span></span>
+      </h1>
+    </div>
+    <div class="d-summary" data-rv><span class="mono">{t('detail.contribution')}</span><p>{d.summary}</p></div>
+    {
+      meta.length > 0 && (
+        <div class="meta mono" data-rv>
+          {meta.map(([k, v]) => <div>{k}<b>{v}</b></div>)}
+        </div>
+      )
+    }
+  </section>
+
+  <div class="d-cover" data-parallax>
+    <img src={asset(d.cover)} alt={d.title} transition:name={`cover-${work.slug}`} />
+  </div>
+
+  <LinkButtons links={d.links} playAnchor={d.playable ? '#play' : undefined} playLabel={t('detail.play')} />
+
+  {
+    d.playable && (
+      <section class="section" id="play">
+        <div class="sec-head" data-rv>
+          <h2>{t('detail.play')}</h2>
+          <span class="mono">{d.engine ?? 'Web'}</span>
+        </div>
+        <div data-rv>
+          <PlayableEmbed lang={lang} src={d.playable.src} aspect={d.playable.aspect} poster={d.gallery[0]?.src ?? d.cover} title={d.title} note={d.playable.note} />
+        </div>
+      </section>
+    )
+  }
+
+  {
+    d.video && (
+      <section class="section">
+        <div class="sec-head" data-rv>
+          <h2>{t('detail.trailer')}</h2>
+        </div>
+        <div data-rv>
+          <VideoEmbed type={d.video.type} src={d.video.src} poster={d.video.poster} title={d.title} />
+        </div>
+      </section>
+    )
+  }
+
+  {
+    (hasNotesText || d.notes.length > 0) && (
+      <section class="section">
+        <div class="sec-head" data-rv>
+          <h2>{t('detail.case')}</h2>
+        </div>
+        {hasNotesText && (
+          <div class="prose">
+            <aside class="mono" data-rv>{d.tags.join(' / ')}</aside>
+            <div class="body" data-rv>
+              <Content />
+            </div>
+          </div>
+        )}
+        {d.notes.length > 0 && (
+          <div class="notes-gallery">
+            <Gallery items={d.notes} />
+          </div>
+        )}
+      </section>
+    )
+  }
+
+  {
+    d.gallery.length > 0 && (
+      <section class="section">
+        <div class="sec-head" data-rv>
+          <h2>{t('detail.gallery')}</h2>
+          <span class="mono">{String(d.gallery.length).padStart(2, '0')}</span>
+        </div>
+        <Gallery items={d.gallery} />
+      </section>
+    )
+  }
+
+  <a class="next" href={href(lang, `works/${next.slug}`)}>
+    <span class="label mono">{t('detail.next')} →</span>
+    <span class="t">{next.data.title} <em>→</em></span>
+  </a>
+</Base>

@@ -1,0 +1,9 @@
+node_modules/
+dist/
+.astro/
+.DS_Store
+
+# early style drafts, not part of the site
+style-samples/
+dist-base/
+内容清单.md

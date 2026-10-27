@@ -1,0 +1,44 @@
+---
+import { site } from '../data/site';
+import { asset } from '../i18n/ui';
+
+interface Props {
+  links: { type: string; url: string; label?: string }[];
+  playAnchor?: string;
+  playLabel?: string;
+}
+const { links, playAnchor, playLabel } = Astro.props;
+const icon: Record<string, string> = { itch: '◆', steam: '◈', download: '↓', github: '⌥', website: '↗', video: '▶' };
+// `release:<tag>/<file>` → this site's GitHub release asset; empty until site.repo is set
+const resolve = (url: string) => {
+  if (url.startsWith('release:')) return site.repo ? `https://github.com/${site.repo}/releases/download/${url.slice(8)}` : '';
+  return /^(https?:|mailto:)/.test(url) ? url : asset(url);
+};
+const fallback: Record<string, string> = { itch: 'itch.io', steam: 'Steam', download: 'Download', github: 'GitHub', website: 'Website', video: 'Trailer' };
+---
+
+{
+  (playAnchor || links.length > 0) && (
+    <div class="actions mono" data-fade>
+      {playAnchor && (
+        <a class="btn primary" href={playAnchor}>
+          <span class="ico">▶</span>
+          {playLabel}
+        </a>
+      )}
+      {links.map((l) => (
+        resolve(l.url) ? (
+          <a class="btn" href={resolve(l.url)} target="_blank" rel="noopener">
+            <span class="ico">{icon[l.type] ?? '↗'}</span>
+            {l.label ?? fallback[l.type] ?? l.url}
+          </a>
+        ) : (
+          <span class="btn pending" title="Release not published yet">
+            <span class="ico">{icon[l.type] ?? '↗'}</span>
+            {l.label ?? fallback[l.type]}
+          </span>
+        )
+      ))}
+    </div>
+  )
+}

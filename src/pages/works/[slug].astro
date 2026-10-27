@@ -1,0 +1,16 @@
+---
+import WorkView from '../../views/WorkView.astro';
+import { getWorks } from '../../i18n/ui';
+
+export async function getStaticPaths() {
+  const works = await getWorks('zh');
+  return works.map((work, index) => ({
+    params: { slug: work.slug },
+    props: { work, index, next: works[(index + 1) % works.length] },
+  }));
+}
+
+const { work, index, next } = Astro.props;
+---
+
+<WorkView lang="zh" work={work} index={index} next={next} />

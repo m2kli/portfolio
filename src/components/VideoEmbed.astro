@@ -1,0 +1,27 @@
+---
+import { asset } from '../i18n/ui';
+
+interface Props {
+  type: 'youtube' | 'bilibili' | 'local';
+  src: string;
+  poster?: string;
+  title: string;
+}
+const { type, src, poster, title } = Astro.props;
+const embed =
+  type === 'youtube'
+    ? `https://www.youtube-nocookie.com/embed/${src}`
+    : type === 'bilibili'
+      ? `https://player.bilibili.com/player.html?bvid=${src}&autoplay=0&high_quality=1`
+      : null;
+---
+
+<div class="video">
+  {
+    embed ? (
+      <iframe src={embed} title={title} loading="lazy" allow="fullscreen; picture-in-picture; encrypted-media" allowfullscreen />
+    ) : (
+      <video src={asset(src)} poster={poster ? asset(poster) : undefined} controls preload="metadata" playsinline />
+    )
+  }
+</div>
