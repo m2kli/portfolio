@@ -46,7 +46,7 @@ notes:
     wide: true
 links:
   - type: download
-    url: release:after9-demo-v1/AFTER_THE_9_Win64.zip
+    url: release:after9-demo-v1/AFTER_THE_9_main_991a544_Windows_x64.zip
     label: 下载 Windows 版（710 MB）
 order: 4
 ---

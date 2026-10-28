@@ -74,7 +74,7 @@ npm run maps:shots         # 重新生成镇水、AFTER THE 9 作品页的高清
    | 镇水 | `zhenshui-demo-v1` | `Zhenshui_Greybox_Demo_Win64.zip` |
    | THIIS STORE IS CLOSED | `thiis-demo-v1` | `THIIS_STORE_IS_CLOSED_Win64.zip` |
    | reload?! | `reload-demo-v1` | `reload_Demo2_Win64.zip` |
-   | AFTER THE 9 | `after9-demo-v1` | `AFTER_THE_9_Win64.zip` |
+   | AFTER THE 9 | `after9-demo-v1` | `AFTER_THE_9_main_991a544_Windows_x64.zip`（保留原名） |
 
 4. 先把文件**改成上表里的英文名**再拖进去（中文文件名在 Releases 里会被改乱），点 **Publish release**。
 
