@@ -63,7 +63,7 @@ npm run maps:shots         # 重新生成镇水、AFTER THE 9 作品页的高清
 
 ## 大文件下载（GitHub Releases）
 
-可下载的 Windows 版本（镇水、THIIS、reload?!）都比较大，不放进仓库，放在本仓库的 Releases 里，作品页按钮自动指向它。
+可下载的 Windows 版本（镇水、THIIS、reload?!、AFTER THE 9）都比较大，不放进仓库，放在本仓库的 Releases 里，作品页按钮自动指向它。
 
 1. `src/data/site.ts` 里把 `repo` 填成 `用户名/仓库名`。
 2. GitHub 仓库页面 → **Releases** → **Draft a new release**。
@@ -74,6 +74,7 @@ npm run maps:shots         # 重新生成镇水、AFTER THE 9 作品页的高清
    | 镇水 | `zhenshui-demo-v1` | `Zhenshui_Greybox_Demo_Win64.zip` |
    | THIIS STORE IS CLOSED | `thiis-demo-v1` | `THIIS_STORE_IS_CLOSED_Win64.zip` |
    | reload?! | `reload-demo-v1` | `reload_Demo2_Win64.zip` |
+   | AFTER THE 9 | `after9-demo-v1` | `AFTER_THE_9_Win64.zip` |
 
 4. 先把文件**改成上表里的英文名**再拖进去（中文文件名在 Releases 里会被改乱），点 **Publish release**。
 

@@ -44,6 +44,10 @@ notes:
   - src: works/after-the-9/map-china-pacing.png
     caption: "China hall · main-route pressure curve"
     wide: true
+links:
+  - type: download
+    url: release:after9-demo-v1/AFTER_THE_9_Win64.zip
+    label: Download for Windows (710 MB)
 order: 4
 ---
 

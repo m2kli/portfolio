@@ -44,6 +44,10 @@ notes:
   - src: works/after-the-9/map-china-pacing.png
     caption: "中国馆 · 主线压力曲线"
     wide: true
+links:
+  - type: download
+    url: release:after9-demo-v1/AFTER_THE_9_Win64.zip
+    label: 下载 Windows 版（710 MB）
 order: 4
 ---
 
