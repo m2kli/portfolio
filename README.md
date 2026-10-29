@@ -51,7 +51,7 @@ npm run preview    # 预览构建结果
 
 ## 关卡设计工作台（作品集演示版）
 
-`public/demos/level-workbench/` 是从 LevelWorkbench 仓库生成的副本，只含 5 张地图：两张 AI 样本、埃及馆、中国馆、镇水·晋祠全图。页面标题和页头换成了作品集版本，并加了"← 作品集"返回链接。源仓库本身不会被改动。
+`public/demos/level-workbench/` 是从 LevelWorkbench 仓库生成的副本，只含 6 张地图：两张 AI 样本、埃及馆、中国馆、镇水·晋祠全图（圣母殿区按兴趣点图展开）、镇水·圣母殿兴趣点。页面标题和页头换成了作品集版本，并加了"← 作品集"返回链接。源仓库本身不会被改动。
 
 ```bash
 npm run workbench          # 重新生成副本（默认读取 C:/Users/m2k/Documents/LevelWorkbench 和 JinciLevelTest）

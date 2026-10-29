@@ -19,7 +19,7 @@ gallery:
 playable:
   src: demos/level-workbench/index.html
   aspect: 16/10
-  note: "Portfolio build with five sample maps: two AI samples, the Egypt and China halls, and the Zhenshui · Jinci full map. Switch 2D / 3D and explore validation, pressure curves and evacuation distance."
+  note: "Portfolio build with six sample maps: two AI samples, the Egypt and China halls, the Zhenshui · Jinci full map and its Shengmu Hall POI. Switch 2D / 3D and explore validation, pressure curves and evacuation distance."
 links:
   - type: website
     url: demos/level-workbench/index.html

@@ -14,7 +14,7 @@ const pageUrl = pathToFileURL(path.join(root, 'public/demos/level-workbench/inde
 
 // [work slug, file prefix, map JSON]
 const targets = [
-  ['zhenshui', 'full', path.join(JINCI, 'maps/jinci-full.json')],
+  ['zhenshui', 'full', path.join(JINCI, 'maps/jinci-full-detail.json')],  // POI detail in place of zones 13 / 14
   ['zhenshui', 'poi', path.join(JINCI, 'maps/jinci-poi.json')],
   ['after-the-9', 'egypt', path.join(WB, 'maps/egypt.json')],
   ['after-the-9', 'china', path.join(WB, 'maps/china.json')],

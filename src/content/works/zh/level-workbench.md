@@ -19,7 +19,7 @@ gallery:
 playable:
   src: demos/level-workbench/index.html
   aspect: 16/10
-  note: "作品集演示版，含 5 张示例地图：两张 AI 样本、埃及馆、中国馆和镇水·晋祠全图。可切换 2D / 3D，查看校验、压力曲线与撤离距离。"
+  note: "作品集演示版，含 6 张示例地图：两张 AI 样本、埃及馆、中国馆、镇水·晋祠全图和镇水·圣母殿兴趣点。可切换 2D / 3D，查看校验、压力曲线与撤离距离。"
 links:
   - type: website
     url: demos/level-workbench/index.html

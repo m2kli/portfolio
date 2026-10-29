@@ -33,7 +33,9 @@ def maps_for(workbench: Path, jinci: Path) -> list[tuple[str, Path]]:
         ('sample-multifloor', workbench / 'maps' / 'sample-multifloor.json'),
         ('egypt', workbench / 'maps' / 'egypt.json'),
         ('china', workbench / 'maps' / 'china.json'),
-        ('jinci', jinci / 'maps' / 'jinci-full.json'),
+        # full map with the POI detail in place of zones 13 / 14 (JinciLevelTest/tools/merge_poi.py), then the POI itself
+        ('jinci', jinci / 'maps' / 'jinci-full-detail.json'),
+        ('jinci-poi', jinci / 'maps' / 'jinci-poi.json'),
     ]
 
 
@@ -86,7 +88,7 @@ def build(workbench: Path, jinci: Path) -> None:
         (r'<title>[^<]*</title>', '<title>关卡设计工作台 · 作品集演示</title>'),
         (r'<span class="wb-mark">[^<]*</span>', '<span class="wb-mark">L</span>'),
         (r'(<div><b>关卡工作台</b><span>)[^<]*(</span>)', r'\1LEVEL DESIGN WORKBENCH · PORTFOLIO DEMO\2'),
-        (r'(<p class="wb-hint">)[^<]*(</p>)', r'\1作品集演示版：5 张示例地图。也可以导入任何符合规范的地图 JSON，不需要改代码。\2'),
+        (r'(<p class="wb-hint">)[^<]*(</p>)', r'\1作品集演示版：6 张示例地图。也可以导入任何符合规范的地图 JSON，不需要改代码。\2'),
         (r"(font-weight='600' fill='white' text-anchor='middle'%3E)9(%3C)", r'\1L\2'),
     ]
     for pattern, repl in rebrand:
