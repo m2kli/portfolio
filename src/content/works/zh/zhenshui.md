@@ -41,7 +41,7 @@ notes:
 links:
   - type: download
     url: release:zhenshui-demo-v1/Zhenshui_Greybox_Demo_Win64.zip
-    label: 下载可玩 Demo（Windows · 334 MB）
+    label: 下载可玩 Demo（Windows · 341 MB）
 order: 3
 ---
 
