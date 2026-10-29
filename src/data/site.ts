@@ -4,7 +4,7 @@ export const site = {
   // `release:<tag>/<file>` in a work's links point to that repo's release assets.
   repo: 'm2kli/portfolio',
   // GoatCounter site code ('xxx' for https://xxx.goatcounter.com). Empty = no analytics.
-  goatcounter: '',
+  goatcounter: 'm2kli',
   // Stored in two halves and joined in the browser, so the address never appears whole in the HTML.
   email: { user: '1391266381', domain: 'qq.com' },
   links: [
