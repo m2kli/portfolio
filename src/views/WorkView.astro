@@ -54,7 +54,7 @@ const meta = [
     <img src={asset(d.cover)} alt={d.title} transition:name={`cover-${work.slug}`} />
   </div>
 
-  <LinkButtons links={d.links} playAnchor={d.playable ? '#play' : undefined} playLabel={t('detail.play')} />
+  <LinkButtons links={d.links} playAnchor={d.playable ? '#play' : undefined} playLabel={t('detail.play')} slug={work.slug} />
 
   {
     d.playable && (
@@ -64,7 +64,7 @@ const meta = [
           <span class="mono">{d.engine ?? 'Web'}</span>
         </div>
         <div data-rv>
-          <PlayableEmbed lang={lang} src={d.playable.src} aspect={d.playable.aspect} poster={d.gallery[0]?.src ?? d.cover} title={d.title} note={d.playable.note} />
+          <PlayableEmbed lang={lang} slug={work.slug} src={d.playable.src} aspect={d.playable.aspect} poster={d.gallery[0]?.src ?? d.cover} title={d.title} note={d.playable.note} />
         </div>
       </section>
     )

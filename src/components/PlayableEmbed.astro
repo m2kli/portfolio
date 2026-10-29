@@ -10,19 +10,20 @@ interface Props {
   poster: string;
   title: string;
   note?: string;
+  slug?: string;
 }
-const { lang, src, aspect, poster, title, note } = Astro.props;
+const { lang, src, aspect, poster, title, note, slug = 'site' } = Astro.props;
 const t = useT(lang);
 ---
 
 <div class="play-wrap">
   <div class="play" style={`aspect-ratio:${aspect}`} data-play data-src={asset(src)}>
-    <button class="start" type="button"><span>▶ {t('detail.playStart')}</span></button>
+    <button class="start" type="button" data-gc={`play-start/${slug}`}><span>▶ {t('detail.playStart')}</span></button>
     <img class="poster" src={asset(poster)} alt="" />
   </div>
   <div class="play-bar mono">
     <p>{note}</p>
-    <button type="button" class="link-u mono" data-fs>{t('detail.fullscreen')} ⤢</button>
+    <button type="button" class="link-u mono" data-fs data-gc={`play-fullscreen/${slug}`}>{t('detail.fullscreen')} ⤢</button>
   </div>
   <template data-title>{title}</template>
 </div>

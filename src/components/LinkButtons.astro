@@ -4,10 +4,12 @@ import { asset } from '../i18n/ui';
 
 interface Props {
   links: { type: string; url: string; label?: string }[];
+  // work slug, used to name click events (e.g. download/zhenshui)
+  slug?: string;
   playAnchor?: string;
   playLabel?: string;
 }
-const { links, playAnchor, playLabel } = Astro.props;
+const { links, playAnchor, playLabel, slug = 'site' } = Astro.props;
 const icon: Record<string, string> = { itch: '◆', steam: '◈', download: '↓', github: '⌥', website: '↗', video: '▶' };
 // `release:<tag>/<file>` → this site's GitHub release asset; empty until site.repo is set
 const resolve = (url: string) => {
@@ -21,14 +23,14 @@ const fallback: Record<string, string> = { itch: 'itch.io', steam: 'Steam', down
   (playAnchor || links.length > 0) && (
     <div class="actions mono" data-fade>
       {playAnchor && (
-        <a class="btn primary" href={playAnchor}>
+        <a class="btn primary" href={playAnchor} data-gc={`play-jump/${slug}`}>
           <span class="ico">▶</span>
           {playLabel}
         </a>
       )}
       {links.map((l) => (
         resolve(l.url) ? (
-          <a class="btn" href={resolve(l.url)} target="_blank" rel="noopener">
+          <a class="btn" href={resolve(l.url)} target="_blank" rel="noopener" data-gc={`${l.type}/${slug}`}>
             <span class="ico">{icon[l.type] ?? '↗'}</span>
             {l.label ?? fallback[l.type] ?? l.url}
           </a>

@@ -1,0 +1,39 @@
+---
+// GoatCounter: cookie-free visit counting. Off until site.goatcounter is set.
+// The site navigates without full page loads (ClientRouter), so automatic counting on load
+// is turned off and every page view is counted on `astro:page-load` instead.
+// Clicks on any element with `data-gc="<event name>"` are recorded as events.
+import { site } from '../data/site';
+
+const code = site.goatcounter;
+---
+
+{
+  code && (
+    <>
+      <script
+        is:inline
+        data-goatcounter={`https://${code}.goatcounter.com/count`}
+        data-goatcounter-settings='{"no_onload": true}'
+        async
+        src="https://gc.zgo.at/count.js"
+      />
+      <script is:inline>
+        (() => {
+          if (window.__gcBound) return;
+          window.__gcBound = true;
+          // count.js loads async; retry briefly until it is ready
+          const send = (vars, tries = 0) => {
+            if (window.goatcounter && window.goatcounter.count) window.goatcounter.count(vars);
+            else if (tries < 25) setTimeout(() => send(vars, tries + 1), 200);
+          };
+          document.addEventListener('astro:page-load', () => send({ path: location.pathname + location.search }));
+          document.addEventListener('click', (e) => {
+            const el = e.target.closest && e.target.closest('[data-gc]');
+            if (el) send({ path: el.dataset.gc, title: (el.textContent || '').trim().slice(0, 80), event: true });
+          }, true);
+        })();
+      </script>
+    </>
+  )
+}

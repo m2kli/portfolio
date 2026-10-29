@@ -1,5 +1,6 @@
 ---
 import { ClientRouter } from 'astro:transitions';
+import Analytics from '../components/Analytics.astro';
 import Masthead from '../components/Masthead.astro';
 import Footer from '../components/Footer.astro';
 import { site } from '../data/site';
@@ -48,6 +49,7 @@ const ogImage = image ? new URL(asset(image), Astro.site) : undefined;
       document.documentElement.classList.add('js');
       document.addEventListener('astro:after-swap', () => document.documentElement.classList.add('js'));
     </script>
+    <Analytics />
     <ClientRouter />
   </head>
   <body>

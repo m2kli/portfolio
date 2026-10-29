@@ -10,3 +10,4 @@ dist-base/
 
 # renamed copies of the demo zips, for uploading to GitHub Releases
 上传用_下载包/
+.claude/
