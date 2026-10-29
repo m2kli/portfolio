@@ -56,6 +56,14 @@ def build(workbench: Path, jinci: Path) -> None:
         dest.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(workbench / rel, dest)
 
+    # Light theme by default (the source follows the OS dark setting); a theme picked with the toggle is still remembered.
+    js_path = OUT / 'workbench.js'
+    js = js_path.read_text(encoding='utf-8')
+    old = "(prefersDark ? 'dark' : 'light')"
+    if js.count(old) != 1:
+        raise SystemExit('workbench.js: default theme line not found')
+    js_path.write_text(js.replace(old, "'light'"), encoding='utf-8')
+
     maps = {}
     for key, path in maps_for(workbench, jinci):
         data = compact(json.loads(path.read_text(encoding='utf-8-sig')))

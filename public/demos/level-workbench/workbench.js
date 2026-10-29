@@ -2071,7 +2071,7 @@
       entityById: id => (state.data ? indexData(state.data).get(id) : null),
     });
     const prefersDark = window.matchMedia?.('(prefers-color-scheme: dark)').matches;
-    setTheme(stored.get('wb-theme') || (prefersDark ? 'dark' : 'light'));
+    setTheme(stored.get('wb-theme') || 'light');
     if (stored.get('wb-hide-left')) togglePanel('left', true);
     if (stored.get('wb-hide-right')) togglePanel('right', true);
     renderMapList();
