@@ -7,7 +7,7 @@
   --rule: #17140f;
   --rule-soft: rgba(23, 20, 15, 0.2);
   --red: #c8371d;
-  --serif: 'Fraunces', 'Noto Serif SC', Georgia, serif;
+  --serif: 'Fraunces Variable', 'Noto Serif SC', Georgia, serif;
   --mono: 'IBM Plex Mono', ui-monospace, monospace;
   --pad: clamp(16px, 4vw, 56px);
   --ease: cubic-bezier(0.2, 0.8, 0.2, 1);

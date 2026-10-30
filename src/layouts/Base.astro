@@ -5,6 +5,13 @@ import Masthead from '../components/Masthead.astro';
 import Footer from '../components/Footer.astro';
 import { site } from '../data/site';
 import { altPath, asset, type Lang } from '../i18n/ui';
+// Fonts are self-hosted (Google Fonts is blocked in mainland China and its stylesheet blocks rendering).
+// Noto Serif SC is split by unicode-range, so a page only downloads the slices for the characters it shows.
+import '@fontsource-variable/fraunces/opsz.css';
+import '@fontsource-variable/fraunces/opsz-italic.css';
+import '@fontsource/noto-serif-sc/400.css';
+import '@fontsource/noto-serif-sc/600.css';
+import '@fontsource/ibm-plex-mono/400.css';
 import '../styles/global.css';
 
 interface Props {
@@ -39,12 +46,6 @@ const ogImage = image ? new URL(asset(image), Astro.site) : undefined;
     <meta property="og:type" content="website" />
     {ogImage && <meta property="og:image" content={ogImage} />}
     <link rel="icon" href={asset('favicon.svg')} type="image/svg+xml" />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,500;1,9..144,300;1,9..144,500&family=Noto+Serif+SC:wght@400;600&family=IBM+Plex+Mono:wght@400&display=swap"
-      rel="stylesheet"
-    />
     <script is:inline>
       document.documentElement.classList.add('js');
       document.addEventListener('astro:after-swap', () => document.documentElement.classList.add('js'));
